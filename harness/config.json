@@ -1,0 +1,48 @@
+{
+  "logicalWidth": 1512,
+  "logicalHeight": 982,
+  "dpr": 2,
+  "width": 3024,
+  "height": 1964,
+  "models": {
+    "elevator": {
+      "name": "Elevator",
+      "path": "../models/Elevator.ply",
+      "count": 2796503,
+      "target": [
+        -0.9502010345,
+        -6.8692420721,
+        2.7221307755
+      ],
+      "offset": [
+        10.0575225395,
+        -6.7050150264,
+        -18.4387913225
+      ]
+    },
+    "hotel": {
+      "name": "HotelFareza",
+      "path": "../models/HotelFareza.ply",
+      "count": 12202010,
+      "target": [
+        -3.4270347770845504,
+        -2.901584617356381,
+        12.751990850542853
+      ],
+      "offset": [
+        3,
+        -3,
+        28
+      ]
+    }
+  },
+  "versions": {
+    "gsl": "1.1.5",
+    "spark": "2.2.0",
+    "three": "0.186.0",
+    "supersplat": "3.4.2",
+    "supersplatCommit": "f76e67633f21b298846c29eceab48ae20579fb4e",
+    "playcanvas": "2.22.4"
+  },
+  "protocol": "native-renderer-defaults-original-views-20260925"
+}

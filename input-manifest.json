@@ -1,0 +1,68 @@
+{
+  "hardware": {
+    "machine_name": "MacBook Pro",
+    "machine_model": "Mac17,9",
+    "chip_type": "Apple M5 Pro",
+    "number_processors": "proc 15:5:0:10",
+    "physical_memory": "48 GB",
+    "macOS": "26.7"
+  },
+  "models": [
+    {
+      "model": "elevator",
+      "file": "Elevator.ply",
+      "bytes": 659976186,
+      "splats": 2796503,
+      "sha256": "4abefd16b2cf6c357ce9bd3058a6dfc0c46d546984d5b9db5cf1e9c0eb489e9d",
+      "camera": {
+        "target": [
+          -0.9502010345,
+          -6.8692420721,
+          2.7221307755
+        ],
+        "offset": [
+          10.0575225395,
+          -6.7050150264,
+          -18.4387913225
+        ]
+      }
+    },
+    {
+      "model": "hotel",
+      "file": "HotelFareza.ply",
+      "bytes": 2879675872,
+      "splats": 12202010,
+      "sha256": "a59a41f73c5033dd15c058ef084cda4f12a41c2dda2c421714e99946151041dc",
+      "camera": {
+        "target": [
+          -3.4270347770845504,
+          -2.901584617356381,
+          12.751990850542853
+        ],
+        "offset": [
+          3,
+          -3,
+          28
+        ]
+      }
+    }
+  ],
+  "config": {
+    "logicalWidth": 1512,
+    "logicalHeight": 982,
+    "dpr": 2,
+    "width": 3024,
+    "height": 1964,
+    "versions": {
+      "gsl": "1.1.5",
+      "spark": "2.2.0",
+      "three": "0.186.0",
+      "supersplat": "3.4.2",
+      "supersplatCommit": "f76e67633f21b298846c29eceab48ae20579fb4e",
+      "playcanvas": "2.22.4"
+    },
+    "protocol": "native-renderer-defaults-original-views-20260925"
+  },
+  "gslWebGPUWorkingColorSpace": "srgb",
+  "protocol": "Three fresh Chrome processes per backend and model; Gaussian Splat Lite backend and sorting order crossed; Spark remeasured separately with non-radial sorting; original published camera presets; native renderer splat defaults; camera-axis depth sorting for all renderers; single frame in flight; native GPU timestamps; source PLY and SH3 preserved. SuperSplat stochastic adaptation and occlusion use native defaults."
+}

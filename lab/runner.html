@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;overflow:hidden;background:#101418}canvas{display:block;width:100%;height:100%;touch-action:none}</style></head><body><script type="module">
+import { PACKAGES, exactVersion } from './config.js';
+const version = new URLSearchParams(location.search).get('three');
+if (!exactVersion(version)) throw Error('Invalid Three.js version');
+const base = version === PACKAGES.three.version ? './vendor/three/' : `https://cdn.jsdelivr.net/npm/three@${version}/`;
+const map = document.createElement('script'); map.type = 'importmap';
+map.textContent = JSON.stringify({ imports: { three: base + 'build/three.module.js', 'three/webgpu': base + 'build/three.webgpu.js', 'three/tsl': base + 'build/three.tsl.js', 'three/addons/': base + 'examples/jsm/' } });
+document.head.append(map);
+try { await import('./assets/runner.js'); } catch (error) { parent.postMessage({type:'fatal',error:String(error)}, location.origin); }
+</script></body></html>

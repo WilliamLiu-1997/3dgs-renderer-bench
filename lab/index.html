@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>3DGS Renderer Bench</title><link rel="stylesheet" href="./style.css"></head>
+<body>
+<header><h1>3DGS Renderer Bench</h1><nav><a href="/">Reference results</a><a href="https://github.com/WilliamLiu-1997/3dgs-renderer-bench" target="_blank" rel="noopener">GitHub</a></nav></header>
+<main class="workspace">
+  <aside class="settings">
+    <section class="panel">
+      <h2>Model</h2>
+      <label class="dropzone" id="dropzone"><input id="file" type="file" accept=".ply,.spz"><strong id="file-label">Drop a PLY or SPZ file</strong><span id="file-meta">or click to browse</span></label>
+      <form id="url-form" class="model-url"><label for="model-url">Or load from URL</label><div><input id="model-url" type="url" placeholder="https://example.com/model.ply" required aria-describedby="url-note"><button type="submit">Load</button></div></form>
+      <p class="hint" id="url-note">Direct PLY or SPZ URL. The server must allow cross-origin downloads (CORS).</p>
+      <p class="hint" id="format-note">Files stay on your device. SPZ is converted locally to PLY for all renderers.</p>
+    </section>
+    <section class="panel">
+      <div class="section-title"><h2>Renderers</h2><button class="text-button" id="refresh-versions" title="Check GitHub versions and npm availability">Refresh versions</button></div>
+      <p class="hint" id="version-note">Checking GitHub versions…</p>
+      <p class="hint">Rendering presets are fixed. All backends use camera-axis depth sorting without post-processing.</p>
+      <div id="package-settings"></div>
+      <details class="three-settings"><summary>Three.js version</summary><label class="version-label">Version<input id="version-three" list="versions-three" autocomplete="off"><datalist id="versions-three"></datalist></label><p class="hint">Shared by Spark and GSL. Check package compatibility when changing versions.</p></details>
+    </section>
+    <section class="panel">
+      <h2>Test settings</h2>
+      <div class="field-grid">
+        <label>Resolution<select id="resolution"><option value="1280x720">1280 × 720</option><option value="1920x1080">1920 × 1080</option><option value="2560x1440" selected>2560 × 1440</option><option value="3840x2160">3840 × 2160</option></select></label>
+        <label>Rounds<select id="rounds"><option value="1" selected>1</option><option value="3">3</option><option value="5">5</option></select></label>
+        <label>Sample time<select id="duration"><option value="5">5 s</option><option value="10" selected>10 s</option><option value="20">20 s</option></select></label>
+        <label>Warm-up<select id="warmup"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="5">5 s</option></select></label>
+      </div>
+      <div class="check-row"><label><input id="static" type="checkbox" checked>Static</label><label><input id="moving" type="checkbox" checked>Orbit</label></div>
+    </section>
+  </aside>
+  <div class="main-column">
+    <section class="preview-panel">
+      <div class="preview-heading"><h2>Preview</h2><select id="preview-backend" aria-label="Preview renderer"></select></div>
+      <div id="viewport"><div id="frame-host"></div><div class="empty-scene" id="empty-scene">Select a model to preview</div><div id="viewport-status" hidden role="status"></div><span class="viewport-tag" id="viewport-tag">2560 × 1440</span></div>
+      <div class="preview-toolbar"><span>Drag to orbit · Right-drag to pan · Scroll to zoom</span><div><button id="fit" disabled>Fit</button><button id="apply-preview" disabled>Apply settings</button></div></div>
+      <details class="camera-details"><summary>Camera <span id="camera-status">No model</span></summary><div class="camera-grid"><label>Position X<input id="cam-x" type="number" step="0.1"></label><label>Position Y<input id="cam-y" type="number" step="0.1"></label><label>Position Z<input id="cam-z" type="number" step="0.1"></label><label>Target X<input id="target-x" type="number" step="0.1"></label><label>Target Y<input id="target-y" type="number" step="0.1"></label><label>Target Z<input id="target-z" type="number" step="0.1"></label><label>Vertical FOV<input id="fov" type="number" min="10" max="120" value="45"></label><label>Up axis<select id="up"><option value="-1">−Y (3DGS)</option><option value="1">+Y</option></select></label><button id="apply-camera" disabled>Apply camera</button></div></details>
+    </section>
+    <section class="run-panel"><div><h2 id="run-heading">Load a model to start</h2><p id="run-status" role="status" aria-live="polite">Tests run sequentially. Keep this tab visible.</p></div><button class="primary" id="run" disabled>Run benchmark</button><button id="stop" hidden>Stop</button><progress id="progress" value="0" max="1" hidden></progress></section>
+    <section class="results-panel">
+      <div class="results-heading"><h2>Results</h2><div class="result-actions"><button id="download-json" disabled>Export JSON</button><button id="report" disabled>PDF report</button></div></div>
+      <div class="table-scroll"><table><thead><tr><th>Renderer</th><th>Status</th><th>Frame P50 (ms)</th><th>Frame P95 (ms)</th></tr></thead><tbody id="results"></tbody></table></div>
+      <p class="hint">Frame completion time: draw submission to GPU completion. Lower is better. Excludes waiting for the next screen refresh. Median across rounds; static results shown when selected, otherwise orbit.</p>
+      <p class="hint"><span class="winner">Best</span> Lowest displayed value in each column; ties are highlighted together.</p>
+      <div id="result-detail"></div>
+    </section>
+    <details class="methodology"><summary>Measurement notes</summary>
+      <p>Each backend runs in a fresh iframe per round, with a shared camera and fixed pixel resolution. Test order rotates or reverses between rounds. Orbit motion is ±45° (0.785 rad) with an 8 s period. The full model is loaded; no LOD is generated.</p>
+      <p>Frame time starts immediately before the draw call and ends when submitted GPU work completes. One frame is in flight. WebGL uses fenceSync / clientWaitSync; WebGPU uses GPUQueue.onSubmittedWorkDone(), via the canvas configuration. requestAnimationFrame schedules samples outside the timer. Completion includes CPU submission, GPU work and synchronization overhead; it is not isolated GPU execution time or display latency.</p>
+      <p>The timed draw call is renderer.render for Three.js, app.update + app.render for PlayCanvas. Camera updates are excluded. Async sorting keeps its native schedule; the measurement does not wait for pending worker results.</p>
+      <p>Load time runs from the public loader call to its completion signal. It excludes package downloads, initialization, SPZ conversion and the first visible frame. Completion signals vary by library; warm-up does not force asynchronous sorting to finish.</p>
+      <p>Only public APIs are used. Dependencies and internal parameters are unchanged. GPU execution time, sort time and GPU memory are not measured. Settings may produce different image quality. Hiding this tab or resizing the window stops the test; unfinished samples are excluded.</p>
+    </details>
+  </div>
+</main>
+<dialog id="report-dialog"><div class="dialog-header"><h2>PDF report</h2><div><a id="pdf-download" class="button primary" download="splat-benchmark.pdf">Download PDF</a><button id="close-report" aria-label="Close report">Close</button></div></div><div id="report-pages"></div></dialog>
+<div id="toast" role="alert" hidden></div>
+<script type="module" src="./assets/app.js"></script>
+</body></html>
