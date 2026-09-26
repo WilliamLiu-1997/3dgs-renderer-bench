@@ -1,20 +1,22 @@
 import * as THREE from 'three';
 import {WebGPURenderer} from 'three/webgpu';
 import {sleep,fenceGL} from './timer.js';
+import {PRESETS} from './dist/lab-config.js';
 export async function createThree(config,mode,model,onDevice){
  const spark=mode==='spark',gpu=mode==='gsl-gpu';
  // Match the GSL viewer: native WebGPU blends in sRGB; WebGL outputs sRGB.
  THREE.ColorManagement.workingColorSpace=gpu?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace;
  const lib=await import(spark?'/dist/spark.js':'/dist/gsl.js');
  let renderer,device,gl;
- const rendererParameters={antialias:false,powerPreference:'high-performance',...(spark?{}:{alpha:true,reversedDepthBuffer:true})};
- if(gpu){const adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance',featureLevel:'compatibility',xrCompatible:false});if(!adapter)throw Error('No WebGPU adapter');renderer=new WebGPURenderer({...rendererParameters,requiredLimits:{maxBufferSize:adapter.limits.maxBufferSize,maxStorageBufferBindingSize:adapter.limits.maxStorageBufferBindingSize}});await renderer.init();if(!renderer.backend.isWebGPUBackend)throw Error('Native WebGPU required');device=renderer.backend.device;onDevice(device);}
+ const rendererParameters={antialias:false,alpha:false,powerPreference:'high-performance',...(spark?{}:{reversedDepthBuffer:true})};
+ if(gpu){const adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'});if(!adapter)throw Error('No WebGPU adapter');renderer=new WebGPURenderer({...rendererParameters,requiredLimits:{maxBufferSize:adapter.limits.maxBufferSize,maxStorageBufferBindingSize:adapter.limits.maxStorageBufferBindingSize}});await renderer.init();if(!renderer.backend.isWebGPUBackend)throw Error('Native WebGPU required');device=renderer.backend.device;onDevice(device);}
  else{renderer=new THREE.WebGLRenderer(rendererParameters);gl=renderer.getContext();}
- renderer.setPixelRatio(config.dpr);renderer.setSize(config.logicalWidth,config.logicalHeight);renderer.setClearColor(0,1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;document.body.append(renderer.domElement);
+ renderer.setPixelRatio(config.dpr);renderer.setSize(config.logicalWidth,config.logicalHeight);renderer.setClearColor(0x101418,1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;document.body.append(renderer.domElement);
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,config.width/config.height,.1,3000);
- // Keep native projection, filtering and culling; compare camera-axis sorting.
+ // Share the exact matched rendering presets with the browser lab.
  // The benchmark controls scheduling; Spark uses full data and extended storage.
- const options={renderer,autoUpdate:false,sortRadial:false,...(spark?{accumExtSplats:true}:{})};
+ const {extended,...preset}=PRESETS[spark?'spark':'gsl'];
+ const options={renderer,...preset,autoUpdate:false,...(spark?{accumExtSplats:extended}:{autoStochastic:false})};
  const gs=new (spark?lib.SparkRenderer:lib.GaussianSplatRenderer)(options);scene.add(gs);
  const mesh=new lib.SplatMesh({url:'/models/'+model+'.ply',extSplats:true,onProgress:e=>window.progress={loaded:e.loaded,total:e.total,stage:e.stage}});scene.add(mesh);
  const start=performance.now();await mesh.initialized;const loadMs=performance.now()-start;

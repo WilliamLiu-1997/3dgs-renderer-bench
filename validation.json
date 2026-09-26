@@ -1,11 +1,16 @@
 {
-  "runs": 24,
-  "performanceGroups": 180,
-  "measuredFrames": 15568,
+  "runs": 36,
+  "performanceGroups": 192,
+  "measuredFrames": 17440,
   "sortGroups": 36,
   "sortSamples": 576,
-  "nativeRendererDefaults": true,
+  "renderingSettingsAdjustedAsCloselyAsPossible": true,
+  "gslDefaultSortOnly": true,
+  "playcanvasWebGPUStochastic": true,
+  "supersplatEditorStochasticAndSpatialResolve": true,
+  "supersplatNativeDepthOcclusion": true,
   "allSortRadialFalse": true,
+  "motionAmplitudeDegrees": 45,
   "browsers": [
     "153.0.8010.53"
   ],
@@ -20,11 +25,10 @@
   "unknownGpuFormats": 0,
   "sparkExtendedSourceAndAccumulator": true,
   "sparkDefaultLodWithoutHierarchy": true,
-  "supersplatNativeStochasticDefaults": true,
   "cameraMatchesConfig": true,
   "gslWebGPUViewerColorSpace": "srgb",
   "gslWebGPUSpatialResolveTemporalEnabled": false,
-  "memoryMetric": "Main-thread JS heap after GC; external storage and Worker WASM capacity separate",
-  "supersplatNativeTargetFormats": true,
+  "frameMetric": "Frame Completion P50 and P95",
+  "memoryMetric": "JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate",
   "complete": true
 }

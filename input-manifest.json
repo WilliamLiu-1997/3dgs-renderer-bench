@@ -56,13 +56,13 @@
     "versions": {
       "gsl": "1.1.5",
       "spark": "2.2.0",
-      "three": "0.186.0",
-      "supersplat": "3.4.2",
-      "supersplatCommit": "f76e67633f21b298846c29eceab48ae20579fb4e",
-      "playcanvas": "2.22.4"
+      "three": "0.186.1",
+      "playcanvas": "2.23.0-beta.20",
+      "supersplat": "3.4.2"
     },
-    "protocol": "native-renderer-defaults-original-views-20260925"
+    "protocol": "aligned-six-backends-motion45-ss-occlusion-20260926",
+    "motionAmplitudeDegrees": 45
   },
   "gslWebGPUWorkingColorSpace": "srgb",
-  "protocol": "Three fresh Chrome processes per backend and model; Gaussian Splat Lite backend and sorting order crossed; Spark remeasured separately with non-radial sorting; original published camera presets; native renderer splat defaults; camera-axis depth sorting for all renderers; single frame in flight; native GPU timestamps; source PLY and SH3 preserved. SuperSplat stochastic adaptation and occlusion use native defaults."
+  "protocol": "Three fresh Chrome processes per backend and model; rotated/reversed backend order; original published cameras and full PLY/SH3 inputs; rendering settings adjusted as closely as possible; camera-axis sorting; GSL default sorting only; one frame in flight; native GPU timestamps. PlayCanvas Engine 2.23.0-beta.20 uses large on WebGL2 and WebGPU. Additional static/moving raw stochastic cases compare PlayCanvas WebGPU native blue noise, SuperSplat and both GSL backends. Spatial resolve is measured for SuperSplat and GSL; all temporal accumulation is disabled. Post-GC main and live Worker V8 heaps are sampled before instrumentation traversal; external backing and WASM capacity remain separate. SuperSplat 3.4.2 adds its native WebGPU renderer, fixed minPixelSize 2, native stochastic depth occlusion enabled and motion-adaptive contribution culling disabled, and raw stochastic plus spatial resolve with warp disabled. Moving cases use a frame-stepped sinusoidal orbit with 45 degrees amplitude on either side of the base view, matching the lab amplitude."
 }

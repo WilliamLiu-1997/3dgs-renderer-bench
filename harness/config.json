@@ -39,10 +39,10 @@
   "versions": {
     "gsl": "1.1.5",
     "spark": "2.2.0",
-    "three": "0.186.0",
-    "supersplat": "3.4.2",
-    "supersplatCommit": "f76e67633f21b298846c29eceab48ae20579fb4e",
-    "playcanvas": "2.22.4"
+    "three": "0.186.1",
+    "playcanvas": "2.23.0-beta.20",
+    "supersplat": "3.4.2"
   },
-  "protocol": "native-renderer-defaults-original-views-20260925"
+  "protocol": "aligned-six-backends-motion45-ss-occlusion-20260926",
+  "motionAmplitudeDegrees": 45
 }
