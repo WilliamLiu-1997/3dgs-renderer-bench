@@ -1,4 +1,9 @@
-harness/
+# Keep the documentation and report captures required by tools/build-site.mjs.
+harness/*
+!harness/README.md
+!harness/results/
+harness/results/*
+!harness/results/*.png
 vendor/
 licenses/
 models/
