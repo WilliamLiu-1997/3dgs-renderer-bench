@@ -1,0 +1,11 @@
+harness/
+vendor/
+licenses/
+models/
+.venv/
+outputs/
+release/
+site/
+tools/*.py
+tools/requirements.txt
+tools/report_template.html

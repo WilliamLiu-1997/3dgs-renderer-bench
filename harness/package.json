@@ -1,0 +1,23 @@
+{
+  "name": "3dgs-renderer-bench",
+  "version": "1.0.0",
+  "description": "Local Retina 3DGS benchmark for Spark, SuperSplat and Gaussian Splat Lite",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node server.mjs",
+    "bench": "node run.mjs",
+    "pilot": "node run.mjs --pilot --variants"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@playcanvas/splat-transform": "3.6.4",
+    "@sparkjsdev/spark": "2.2.0",
+    "esbuild": "0.25.12",
+    "gaussian-splat-lite": "1.1.5",
+    "playcanvas": "2.22.4",
+    "playwright": "1.55.1",
+    "three": "0.186.0"
+  },
+  "private": true
+}
