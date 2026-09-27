@@ -39,7 +39,7 @@ export async function buildSite(out = path.join(root, 'site')) {
   const summary = JSON.parse(await fs.readFile(path.join(root, 'benchmark-data.json'), 'utf8'));
   for (const item of summary.images) item.path = 'images/' + path.basename(item.path);
   await fs.writeFile(path.join(out, 'benchmark-data.json'), JSON.stringify(summary, null, 2) + '\n');
-  for (const name of ['benchmark-summary.csv', 'benchmark-overview.png', 'benchmark-overview.svg', 'benchmark-stochastic.png', 'benchmark-stochastic.svg', 'benchmark-resolved.png', 'benchmark-resolved.svg', 'input-manifest.json', 'validation.json']) {
+  for (const name of ['benchmark-summary.csv', 'benchmark-overview.png', 'benchmark-overview.svg', 'input-manifest.json', 'validation.json']) {
     await fs.copyFile(path.join(root, name), path.join(out, name));
   }
   console.log(`Built static report with ${data.images.length} thumbnails in ${out}`);

@@ -14,7 +14,7 @@
     "@playcanvas/splat-transform": "3.6.4",
     "@sparkjsdev/spark": "2.2.0",
     "esbuild": "0.25.12",
-    "gaussian-splat-lite": "1.1.5",
+    "gaussian-splat-lite": "1.1.7",
     "playcanvas": "2.23.0-beta.20",
     "playwright": "1.55.1",
     "three": "0.186.1"

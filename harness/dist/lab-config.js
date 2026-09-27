@@ -1,7 +1,7 @@
 export const PACKAGES = {
   spark: { name: '@sparkjsdev/spark', version: '2.2.0' },
   playcanvas: { name: 'playcanvas', version: '2.23.0-beta.20' },
-  gsl: { name: 'gaussian-splat-lite', version: '1.1.5' },
+  gsl: { name: 'gaussian-splat-lite', version: '1.1.7' },
   three: { name: 'three', version: '0.186.1' },
 };
 export const BACKENDS = [

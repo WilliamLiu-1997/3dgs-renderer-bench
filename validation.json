@@ -1,13 +1,19 @@
 {
   "runs": 36,
-  "performanceGroups": 192,
-  "measuredFrames": 17440,
+  "performanceGroups": 240,
+  "measuredFrames": 22192,
   "sortGroups": 36,
   "sortSamples": 576,
   "renderingSettingsAdjustedAsCloselyAsPossible": true,
   "gslDefaultSortOnly": true,
   "playcanvasWebGPUStochastic": true,
-  "supersplatEditorStochasticAndSpatialResolve": true,
+  "rawStochasticOnly": true,
+  "gslStochasticFrontToBackSort": true,
+  "fourViewsPerVariant": true,
+  "testDates": [
+    "2026-09-27"
+  ],
+  "testTimeZone": "Australia/Sydney",
   "supersplatNativeDepthOcclusion": true,
   "allSortRadialFalse": true,
   "motionAmplitudeDegrees": 45,
@@ -27,7 +33,6 @@
   "sparkDefaultLodWithoutHierarchy": true,
   "cameraMatchesConfig": true,
   "gslWebGPUViewerColorSpace": "srgb",
-  "gslWebGPUSpatialResolveTemporalEnabled": false,
   "frameMetric": "Frame Completion P50 and P95",
   "memoryMetric": "JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate",
   "complete": true

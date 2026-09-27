@@ -6,20 +6,17 @@ Measured comparisons of [Spark](https://github.com/sparkjsdev/spark), [PlayCanva
 
 ![Frame completion overview](benchmark-overview.png)
 
-![Raw stochastic frame completion](benchmark-stochastic.png)
-
-![Spatial resolve frame completion](benchmark-resolved.png)
-
 ## What was measured
 
 - Spark 2.2.0 / WebGL2, with extended source data and accumulator.
 - **PlayCanvas Engine 2.23.0-beta.20 / WebGL2 and WebGPU**, using `dataFormat: 'large'` on both.
-- **SuperSplat 3.4.2 / WebGPU**, using PlayCanvas beta.20, with ordinary sorting, raw stochastic rendering and native spatial resolve. Native stochastic depth occlusion uses its default enabled setting; motion-adaptive contribution culling and warp are disabled.
-- Gaussian Splat Lite 1.1.5 / WebGL2 and WebGPU, with default sorting only. Three.js 0.186.1.
+- **SuperSplat 3.4.2 / WebGPU**, using PlayCanvas beta.20, with ordinary sorting and raw stochastic rendering. Native stochastic depth occlusion uses its default enabled setting; motion-adaptive contribution culling and warp are disabled.
+- Gaussian Splat Lite 1.1.7 / WebGL2 and WebGPU, with default sorting only. Three.js 0.186.1.
 - Rendering settings across all six backends are adjusted as closely as possible: camera-axis sorting, aligned size thresholds, blur and alpha. Native projection, culling and sorting details still differ.
 - Elevator: 2,796,503 splats. HotelFareza: 12,202,010 splats. Full original PLY inputs with SH3, unchanged published cameras, no generated LOD hierarchy.
 - MacBook Pro 14, Apple M5 Pro (16 GPU cores), 48 GiB unified memory, macOS 26.7, Chrome 153. Canvas: 1512 × 982 CSS pixels, DPR 2, **3024 × 1964 physical pixels**.
-- Three independent runs per model/backend: **36 runs and 192 performance groups**. All backends measure static main, close side and moving main views (±45° orbit amplitude, matching the lab). Raw stochastic transparency compares PlayCanvas WebGPU (native blue noise) with SuperSplat and both GSL backends in static and moving views. SuperSplat and GSL spatial resolve form a separate comparison. Temporal accumulation is off.
+- Three independent runs per model/backend: **36 runs and 240 performance groups**. All backends measure static and moving versions of both the main and closer side views (±45° orbit amplitude, matching the lab). Each view groups ordinary depth sorting and raw stochastic rendering separately, with independent winners. Raw stochastic compares PlayCanvas WebGPU, SuperSplat and both GSL backends; GSL 1.1.7 retains its default 16-bit front-to-back stochastic sorting. Spatial resolve and temporal accumulation are off.
+- Tested **2026-09-27 (Australia/Sydney)**, derived from raw run timestamps. The report shows test dates separately from generation time.
 
 Frame completion includes CPU submission, GPU completion and timestamp-query readback with one frame in flight; it is not display FPS. The report presents Frame Completion P50 and P95. Sorting latency, combined JS heap + ArrayBuffer + WASM and explicit GPU allocation are separately defined in [the measurement guide](harness/README.md). Adjusting rendering settings does not remove instrumentation overhead or guarantee pixel-identical images.
 
@@ -27,7 +24,7 @@ Frame completion includes CPU submission, GPU completion and timestamp-query rea
 
 Open `3DGS-Renderer-Bench.html`. It includes English/Chinese controls, per-round comparisons and embedded screenshot previews. Original captures link to `harness/results`. No model files are required to read the report.
 
-`benchmark-data.json` and `benchmark-summary.csv` contain summary measurements; `validation.json` records the completed checks. `harness/results` contains 36 raw run JSON files and their captures. The gallery uses 26 round-one captures. The former SuperSplat results are retained in git history and the [historical v1.0.0 kit](https://github.com/WilliamLiu-1997/3dgs-renderer-bench/releases/download/v1.0.0/renderer-benchmark-kit.zip); that release is a different protocol.
+`benchmark-data.json` and `benchmark-summary.csv` contain summary measurements; `validation.json` records the completed checks. `harness/results` contains 36 raw run JSON files and their captures. The gallery uses 20 round-one captures. The former SuperSplat results are retained in git history and the [historical v1.0.0 kit](https://github.com/WilliamLiu-1997/3dgs-renderer-bench/releases/download/v1.0.0/renderer-benchmark-kit.zip); that release is a different protocol.
 
 ## Test your own model
 
@@ -77,7 +74,7 @@ python3 -m venv .venv
 .venv/bin/python tools/validate.py
 ```
 
-Generated files go to `outputs/`. When updating the root snapshot, copy the HTML, JSON, CSV, all three chart PNG/SVG pairs and validation together, and point original-image paths at `harness/results/`. Update `input-manifest.json` with the matching protocol and versions.
+Generated files go to `outputs/`. When updating the root snapshot, copy the HTML, JSON, CSV, the overview PNG/SVG pair and validation together, and point original-image paths at `harness/results/`. Update `input-manifest.json` with the matching protocol and versions.
 
 ## Build the website
 

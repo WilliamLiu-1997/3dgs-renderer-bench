@@ -12,6 +12,10 @@ const models=args.includes('hotel')?['hotel']:args.includes('elevator')?['elevat
 const modes=args.filter(x=>['gsl-gl','gsl-gpu','spark','pc-gl','pc-gpu','supersplat'].includes(x));if(!modes.length)modes.push('spark','pc-gl','pc-gpu','supersplat','gsl-gl','gsl-gpu');
 const folder=pilot?'pilot':'results';fs.mkdirSync(folder,{recursive:true});
 const port=Number(process.env.PORT||5351);
+const scenarios=pilot?[{angle:0,scale:1,moving:false}]:[
+ {angle:0,scale:1,moving:false},{angle:.55,scale:.65,moving:false},
+ {angle:0,scale:1,moving:true},{angle:.55,scale:.65,moving:true}
+];
 const server=await startServer(port);
 function rss(pid){const lines=execFileSync('ps',['-axo','pid=,ppid=,rss=,command='],{encoding:'utf8'}).trim().split('\n').map(l=>{const m=l.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);return {pid:+m[1],ppid:+m[2],kib:+m[3],command:m[4]};});const ids=new Set([pid]);let size;do{size=ids.size;for(const p of lines)if(ids.has(p.ppid))ids.add(p.pid);}while(size!==ids.size);const all=lines.filter(p=>ids.has(p.pid));return {at:Date.now(),totalMiB:all.reduce((s,p)=>s+p.kib,0)/1024,rendererMiB:all.filter(p=>p.command.includes('--type=renderer')).reduce((s,p)=>s+p.kib,0)/1024,gpuProcessMiB:all.filter(p=>p.command.includes('--type=gpu-process')).reduce((s,p)=>s+p.kib,0)/1024};}
 let failures=0;
@@ -39,23 +43,23 @@ for(let round=1;round<=roundCount;round++)for(const model of models){
    output.initialHeap=await collectHeap(browserSession,session);output.initial=await page.evaluate(()=>snapshot());output.initialRss=rss(pid);
    console.log('READY',name,output.initial.loadMs.toFixed(0),'ms',output.initial.state);
    const fast=true;
-   for(const scenario of (pilot?[{angle:0,scale:1,moving:false}]:[{angle:0,scale:1,moving:false},{angle:.55,scale:.65,moving:false},{angle:0,scale:1,moving:true}])){
+   for(const scenario of scenarios){
     const settings={variant:'sorted',fast,...scenario,n:pilot?6:64,minMs:pilot?0:1800};
     const result=await page.evaluate(settings=>benchmark(settings),settings);result.heap=await collectHeap(browserSession,session);result.memory=await page.evaluate(()=>snapshot().memory);result.rss=rss(pid);output.cases.push(result);
     if(result.errors.length)throw Error(result.errors.join('\n'));
-    console.log('CASE',name,'default',scenario.moving?'moving':`view${scenario.angle}`,median(result.rows.map(r=>r.completionMs)).toFixed(2),'completion ms',result.visible,'visible');
+    console.log('CASE',name,'default',scenario.moving?'moving':'static',`view${scenario.angle}`,median(result.rows.map(r=>r.completionMs)).toFixed(2),'completion ms',result.visible,'visible');
    }
    const sort=await page.evaluate(settings=>sortBenchmark(settings),{fast,n:pilot?3:16});output.sort.push(sort);
    console.log('SORT',name,fast,median(sort.rows.map(r=>r.gpuSortMs??r.updateMs)));
    await page.evaluate(fast=>captureView({fast}),fast);
    if(round===1)await page.screenshot({path:folder+'/'+name+'-sorted.png'});
-   const variants=(mode.startsWith('gsl')||mode==='supersplat')?['stochastic','stochastic-resolved']:mode==='pc-gpu'?['stochastic']:[];
+   const variants=(mode.startsWith('gsl')||mode==='supersplat'||mode==='pc-gpu')?['stochastic']:[];
    if(!pilot||args.includes('--variants')){
     for(const variant of variants){
-     for(const moving of (pilot?[false]:[false,true])){
-      const result=await page.evaluate(settings=>benchmark(settings),{variant,moving,n:pilot?6:48,minMs:pilot?0:1500});result.heap=await collectHeap(browserSession,session);result.memory=await page.evaluate(()=>snapshot().memory);result.rss=rss(pid);output.cases.push(result);
+     for(const scenario of scenarios){
+      const result=await page.evaluate(settings=>benchmark(settings),{variant,...scenario,n:pilot?6:48,minMs:pilot?0:1500});result.heap=await collectHeap(browserSession,session);result.memory=await page.evaluate(()=>snapshot().memory);result.rss=rss(pid);output.cases.push(result);
       if(result.errors.length)throw Error(result.errors.join('\n'));
-      console.log('CASE',name,variant,moving?'moving':'static',median(result.rows.map(r=>r.completionMs)).toFixed(2),'completion ms');
+      console.log('CASE',name,variant,scenario.moving?'moving':'static',`view${scenario.angle}`,median(result.rows.map(r=>r.completionMs)).toFixed(2),'completion ms');
      }
      await page.evaluate(variant=>captureView({variant}),variant);if(round===1)await page.screenshot({path:folder+'/'+name+'-'+variant+'.png'});
     }

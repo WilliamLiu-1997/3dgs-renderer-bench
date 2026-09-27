@@ -1,5 +1,6 @@
 from pathlib import Path
 import json, statistics, csv, io, shutil, base64, datetime, math, sys
+from zoneinfo import ZoneInfo
 import numpy as np
 from PIL import Image
 ROOT=Path(__file__).resolve().parent.parent
@@ -32,10 +33,8 @@ for f in files:
  D['browser']=d['browser'];D['versions']=d['config']['versions'];D['rounds']=max(d['round'],D.get('rounds',0))
  D['runs'].append({'name':d['name'],'started':d['started'],'loadMs':d['initial']['loadMs'],'gpuInfo':d['initial']['gpuInfo'],'resolution':d['initial']['resolution'],'dpr':d['initial']['dpr'],'camera':d['initial']['camera'],'renderParameters':d['initial']['state'].get('renderParameters'),'sortRadial':d['initial']['state'].get('sortRadial'),'protocol':d['config'].get('protocol'),'motionAmplitudeDegrees':d['config']['motionAmplitudeDegrees']})
  for c in d['cases']:
-  scenario=c['variant'] if c['variant']!='sorted' else 'moving' if c['moving'] else 'close' if c['angle'] else 'static'
-  # Keep moving stochastic samples in the downloadable data as distinct scenarios.
-  if c['variant'].startswith('stochastic') and c['moving']: scenario+='-moving'
-  row={'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'full' if c['fast'] is False else 'default','scenario':scenario,'n':len(c['rows']),'visibleOrActive':c['visible'],'cpuP50':q([r['cpuSubmitMs'] for r in c['rows']],50),'completionP50':q([r['completionMs'] for r in c['rows']],50),'completionP95':q([r['completionMs'] for r in c['rows']],95),'gpuMiB':mb(c['memory']['gpuBytes']),'cpuMemoryMiB':cpu_memory_mib(c),'workerP50':q([r['workerMs'] for r in c['rpc'] if r['name'].startswith('sort') and r['workerMs'] is not None],50),'asyncP50':q([j['ms'] for j in c['sortJobs']],50),'rpcP50':q([r['roundTripMs'] for r in c['rpc'] if r['name'].startswith('sort')],50)}
+  scenario=('close-moving' if c['moving'] else 'close') if c['angle'] else ('moving' if c['moving'] else 'static')
+  row={'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'full' if c['fast'] is False else 'default','scenario':scenario,'variant':c['variant'],'n':len(c['rows']),'visibleOrActive':c['visible'],'cpuP50':q([r['cpuSubmitMs'] for r in c['rows']],50),'completionP50':q([r['completionMs'] for r in c['rows']],50),'completionP95':q([r['completionMs'] for r in c['rows']],95),'gpuMiB':mb(c['memory']['gpuBytes']),'cpuMemoryMiB':cpu_memory_mib(c),'workerP50':q([r['workerMs'] for r in c['rpc'] if r['name'].startswith('sort') and r['workerMs'] is not None],50),'asyncP50':q([j['ms'] for j in c['sortJobs']],50),'rpcP50':q([r['roundTripMs'] for r in c['rpc'] if r['name'].startswith('sort')],50)}
   D['cases'].append(row)
  sorted_cases=[c for c in d['cases'] if c['variant']=='sorted']
  D['memory'].append({'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'default','scenario':'memory','gpuMiB':max(mb(c['memory']['gpuBytes']) for c in sorted_cases),'cpuMemoryMiB':max(cpu_memory_mib(c) for c in sorted_cases)})
@@ -47,7 +46,7 @@ for f in files:
  if d['round']==1:
   (O/'images').mkdir(exist_ok=True)
   ref=np.asarray(Image.open(R/(d['name']+'-sorted.png')).convert('RGB'),dtype=np.float32)
-  for variant in ['sorted','stochastic','stochastic-resolved']:
+  for variant in sorted({c['variant'] for c in d['cases']}, key=lambda v: v!='sorted'):
    p=R/(d['name']+'-'+variant+'.png')
    if not p.exists():continue
    dest=O/'images'/p.name;shutil.copy2(p,dest)
@@ -56,14 +55,16 @@ for f in files:
    image=np.asarray(Image.open(p).convert('RGB'),dtype=np.float32);delta=image-ref;mse=float(np.mean(delta**2));mae=float(np.mean(abs(delta)))
    D['quality'].append({'model':d['model'],'mode':d['mode'],'variant':variant,'mae':mae,'psnr':10*math.log10(255**2/mse) if mse else None})
 assert all(r['resolution']==[3024,1964] and r['dpr']==2 for r in D['runs'])
+D['testTimeZone']='Australia/Sydney'
+D['testDates']=sorted({datetime.datetime.fromisoformat(r['started']).astimezone(ZoneInfo(D['testTimeZone'])).date().isoformat() for r in D['runs']})
 plain={**D,'images':[{k:v for k,v in im.items() if k!='thumb'} for im in D['images']]}
 (O/'benchmark-data.json').write_text(json.dumps(plain,ensure_ascii=False,indent=2))
 with open(O/'benchmark-summary.csv','w',encoding='utf-8-sig',newline='') as f:
- w=csv.DictWriter(f,fieldnames=D['cases'][0].keys());w.writeheader();w.writerows(D['cases'])
+ w=csv.DictWriter(f,fieldnames=D['cases'][0].keys(),lineterminator='\n');w.writeheader();w.writerows(D['cases'])
 html=(ROOT/'tools/report_template.html').read_text();html=html.replace('__BENCHMARK_DATA__',json.dumps(D,ensure_ascii=False,separators=(',',':')).replace('</','<\\/'));(O/'3DGS-Renderer-Bench.html').write_text(html)
 print('Generated',len(D['runs']),'runs',len(D['cases']),'cases',len(D['images']),'images')
 for model in ['elevator','hotel']:
  for mode in ['spark','pc-gl','pc-gpu','supersplat','gsl-gl','gsl-gpu']:
   for precision in ['default']:
-   rows=[r for r in D['cases'] if r['model']==model and r['mode']==mode and r['precision']==precision and r['scenario']=='static']
+   rows=[r for r in D['cases'] if r['model']==model and r['mode']==mode and r['precision']==precision and r['scenario']=='static' and r['variant']=='sorted']
    print(model,mode,precision,'Frame Completion P50', [round(r['completionP50'],2) for r in rows])

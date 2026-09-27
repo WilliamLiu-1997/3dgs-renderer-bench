@@ -5,7 +5,7 @@ Instrumented benchmark of original PLY models, with rendering settings adjusted 
 - Spark 2.2.0 / WebGL2: ExtSplats source and extended accumulator.
 - PlayCanvas Engine **2.23.0-beta.20** / WebGL2 and native WebGPU: `dataFormat: 'large'`, CPU Worker and GPU sorting respectively.
 - SuperSplat 3.4.2 / WebGPU, using PlayCanvas beta.20 and the vendored SuperSplat rendering pipeline.
-- Gaussian Splat Lite 1.1.5 / WebGL2 and native WebGPU, with Three.js 0.186.1.
+- Gaussian Splat Lite 1.1.7 / WebGL2 and native WebGPU, with Three.js 0.186.1.
 - Elevator: 2,796,503 splats. HotelFareza: 12,202,010 splats. Original published camera presets and complete PLY inputs with SH3.
 - 1512 × 982 CSS pixels, DPR 2, **3024 × 1964 physical pixels**. No MSAA. FOV 45°, near 0.1, far 3000, background #101418.
 
@@ -49,7 +49,7 @@ The build copies the lab config unchanged into `dist/lab-config.js`; the harness
 
 Spark's radius limits are focal-scaled; PlayCanvas's minimum projected size is matched on that basis. PlayCanvas extra contribution culling is disabled (`minContribution: 0`), with `colorUpdateAngle: 0`. Native support, projection, culling and sorting precision still differ: these presets do not guarantee identical images. The full source models contain no LOD hierarchy.
 
-Every backend measures static main view, closer side view and moving main view. PlayCanvas WebGPU, SuperSplat and both GSL backends additionally measure raw stochastic rendering in static and moving views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. SuperSplat and GSL additionally measure native spatial resolve. SuperSplat uses minPixelSize 2 with native pre-blur 0.3; native stochastic depth occlusion is enabled by default; motion-adaptive contribution culling, warp and temporal accumulation remain disabled. Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
+Every backend measures static and moving versions of both the main and closer side views. PlayCanvas WebGPU, SuperSplat and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.1.7 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). SuperSplat uses minPixelSize 2 with native pre-blur 0.3; native stochastic depth occlusion is enabled by default; motion-adaptive contribution culling, warp and temporal accumulation remain disabled. Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
 
 ## Measurement definitions
 
@@ -70,13 +70,13 @@ Every backend measures static main view, closer side view and moving main view. 
 
 Spark retains float32 depth keys and uses two 16-bit Worker/WASM radix digits. PlayCanvas CPU uses native weighted counting-sort bins (19 bits for Elevator, 20 for HotelFareza); GPU rounds its adaptive bit count to radix width (20 bits / five 4-bit digits on this device). Its depth range comes from active scene bounds, not directly from camera near/far.
 
-GSL default sorting drops the lowest eight float32-key bits: one 24-bit counting pass on WebGL2, six 4-bit radix digits on WebGPU. The report measures this default sorting path only.
+GSL default sorting drops the lowest eight float32-key bits: one 24-bit counting pass on WebGL2, six 4-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL 1.1.7’s default 16-bit front-to-back ordering (four GPU radix passes on WebGPU).
 
 GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally and blends/outputs in sRGB, matching the lab. PlayCanvas uses linear tone mapping and native sRGB output. Native SH decoding and source encodings remain unchanged.
 
 ## Outputs
 
-`results/*.json` contains per-frame/per-pass measurements, effective settings, versions, camera, memory and errors. Round-one captures enter the gallery. Build instrumentation measures timing and allocations without replacing rendering or sorting algorithms. `vendor/supersplat` is built through `supersplat.ts`; it measures the native rendering path without the application UI. The build narrows one resource import to the read-only loader and resolves all PlayCanvas imports to beta.20, without changing renderer algorithms.
+`results/*.json` contains per-frame/per-pass measurements, effective settings, versions, camera, memory and errors. Round-one sorted and raw stochastic captures enter the gallery. The report records test dates from run timestamps in Australia/Sydney, separately from its generation time. Build instrumentation measures timing and allocations without replacing rendering or sorting algorithms. `vendor/supersplat` is built through `supersplat.ts`; it measures the native rendering path without the application UI. The build narrows one resource import to the read-only loader and resolves all PlayCanvas imports to beta.20, without changing renderer algorithms.
 
 From the repository root:
 
@@ -86,4 +86,4 @@ From the repository root:
 .venv/bin/python tools/validate.py
 ```
 
-Generated reports go to `outputs/`. Only matching-protocol data is accepted; validation expects 36 successful runs, 192 performance groups and 36 sorting groups.
+Generated reports go to `outputs/`. Only matching-protocol data is accepted; validation expects 36 successful runs, 240 performance groups and 36 sorting groups.

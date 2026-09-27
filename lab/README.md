@@ -38,7 +38,7 @@ npm run dev
 # http://127.0.0.1:5349/test/
 ```
 
-The bundled PlayCanvas version is a pinned prerelease. A scoped npm override lets `@playcanvas/splat-transform` share that version despite its stable-only peer range.
+Bundled Gaussian Splat Lite is pinned to 1.1.7; the rendering presets are unchanged. The bundled PlayCanvas version is a pinned prerelease. A scoped npm override lets `@playcanvas/splat-transform` share that version despite its stable-only peer range.
 
 The dev server tries the next port if 5349 is occupied; use the URL printed in the terminal. To require a specific port, run `PORT=5350 npm run dev`.
 

@@ -37,12 +37,12 @@
     }
   },
   "versions": {
-    "gsl": "1.1.5",
+    "gsl": "1.1.7",
     "spark": "2.2.0",
     "three": "0.186.1",
     "playcanvas": "2.23.0-beta.20",
     "supersplat": "3.4.2"
   },
-  "protocol": "aligned-six-backends-motion45-ss-occlusion-20260926",
+  "protocol": "aligned-six-backends-four-views-raw-20260927",
   "motionAmplitudeDegrees": 45
 }
