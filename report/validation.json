@@ -1,0 +1,50 @@
+{
+  "protocol": "radial-eight-backends-four-views-one-frame-in-flight-v3",
+  "complete": true,
+  "runs": 72,
+  "performanceGroups": 396,
+  "measuredFrames": 75081,
+  "sortGroups": 72,
+  "sortSamples": 1152,
+  "frameMetric": "frame-interval-ms",
+  "fpsMatchesMeanFrameInterval": true,
+  "frameStatisticsRecomputedFromIntervals": true,
+  "warmupSeconds": 2,
+  "sampleSeconds": {
+    "static": 5,
+    "moving": 8
+  },
+  "motionAmplitudeDegrees": 45,
+  "motionPeriodSeconds": 8,
+  "interleavedExecutionOrderVerified": true,
+  "radixSortSupplementRuns": 0,
+  "radixDefaultSortBits": 24,
+  "renderingSettingsAdjustedAsCloselyAsPossible": true,
+  "allSortedCasesRadial": true,
+  "fourViewsPerVariant": true,
+  "stochasticBackends": [
+    "gsl-gpu",
+    "gsl-gl",
+    "pc-gpu"
+  ],
+  "gslStochasticFrontToBackSort": true,
+  "sparkExtendedSourceAndAccumulator": true,
+  "sparkDefaultLodWithoutHierarchy": true,
+  "cameraMatchesConfig": true,
+  "gslWebGPUViewerColorSpace": "srgb",
+  "consoleErrors": 0,
+  "unknownGpuFormats": 0,
+  "browsers": [
+    "156.0.8078.80"
+  ],
+  "physicalResolution": [
+    3024,
+    1964
+  ],
+  "dpr": 2,
+  "testDates": [
+    "2026-11-03"
+  ],
+  "testTimeZone": "Australia/Sydney",
+  "memoryMetric": "JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate"
+}

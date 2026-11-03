@@ -1,0 +1,15 @@
+node_modules/
+vendor/
+site/
+outputs/
+release/
+report/
+models/
+licenses/
+harness/dist/
+harness/results/
+harness/results-current/
+harness/results-original/
+harness/pilot/
+package-lock.json
+*.md

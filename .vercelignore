@@ -1,4 +1,5 @@
-# Keep the documentation and report captures required by tools/build-site.mjs.
+# The site build (tools/build-site.mjs) needs lab/, report/, the READMEs and the
+# published report captures in harness/results/*.png. Everything else stays local.
 harness/*
 !harness/README.md
 !harness/results/

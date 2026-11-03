@@ -2,7 +2,7 @@
 
 `playcanvas-2.24.0-beta.30.tgz` contains the official release ESM build and scripts from [PlayCanvas 2.24.0-beta.30](https://github.com/playcanvas/engine/commit/876ba2e7dffc246b1008695f23f60ac1a9b96109), checked on 2026-11-03 (Australia/Sydney).
 
-The archive retains the MIT license and records the full commit in `package.json.gitHead` and the exported `revision`. Both benchmark applications install this same archive. Viewer uses this Engine peer dependency; it does not bring its own Engine copy.
+The archive retains the MIT license and records the full commit in `package.json.gitHead` and the exported `revision`. The lab and harness share one `package.json` and install this same archive. Viewer uses this Engine peer dependency; it does not bring its own Engine copy.
 
 To reproduce the JavaScript build in a checkout of that commit, install its locked development dependencies and run:
 

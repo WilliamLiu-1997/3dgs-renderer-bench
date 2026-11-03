@@ -13,28 +13,43 @@ Instrumented benchmark of original PLY models, with rendering settings adjusted 
 
 ## Run
 
-Requires Node.js 22 or 24 and local Google Chrome. Put the PLY files in `../models/`, or set their local paths in `config.json`. Models are served only on localhost and are never uploaded.
+Requires Node.js 22 or 24 and local Google Chrome. Put the PLY files in `../models/`, or set their local paths in `config.json`. Models are served only on localhost and are never uploaded. The harness shares the repository's single `package.json`; run everything from the repository root:
 
 ```sh
-cd harness
 npm ci
-npm run build
-npm run pilot
-npm run bench
+npm run bench:build   # instrumented renderer Workers → harness/dist/
+npm run bench:pilot   # quick smoke test → harness/pilot/
+npm run bench         # formal runs → harness/results-current/
 ```
 
-The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the current protocol are skipped. Pilot data goes to `pilot/`; new formal results go to `results-current/`. `RESULTS_DIR` overrides either destination. The published `results/` contains the raw data behind the current main report.
+Formal frame cases use 2 seconds of warm-up, then 5 seconds static or 8 seconds moving (`warmupSeconds` / `sampleSeconds` in `config.json`). Chrome uses its normal frame scheduling without frame-rate/vsync disabling flags.
+
+The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the current protocol are skipped. `RESULTS_DIR` overrides the destination. The published `results/` contains the raw data behind `report/`.
 
 ```sh
-node run.mjs willa radix-gpu viewer-gpu pc-gpu
-ROUNDS=1 node run.mjs elevator gsl-gpu
+node harness/run.mjs willa radix-gpu viewer-gpu pc-gpu
+ROUNDS=1 node harness/run.mjs elevator gsl-gpu
 ```
 
-Backend IDs: `spark`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`. `npm start` separately serves the canvas at port 5349; use `/?mode=pc-gpu&model=hotel`.
+Backend IDs (shared with the lab): `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`. `npm run bench:serve` separately serves the canvas at port 5349; open `/?mode=pc-gpu&model=hotel`.
+
+## Files
+
+| File | Role |
+| --- | --- |
+| `config.json` | Protocol: resolution, models/cameras, backends, sample durations, pinned versions |
+| `run.mjs` | Playwright runner, one Chrome per run; writes `results-current/<model>-<backend>-r<round>.json` |
+| `run-sort.mjs` | Optional Radix sort-latency supplement (vsync disabled) |
+| `server.mjs` | Local server: harness files, `/lab/`, `/node_modules/` and configured models |
+| `index.html`, `client.js` | Benchmark page; exposes `benchmark`, `sortBenchmark`, `captureView`, `snapshot` |
+| `instrument.js` | Error capture, Worker RPC timing and explicit GPU allocation accounting |
+| `three-adapter.js`, `playcanvas-adapter.js`, `shared-adapter.js` | Renderer adapters (the shared one reuses the lab's Radix/Viewer adapters) |
+| `timer.js`, `heap.mjs`, `radix-worker.js` | WebGPU timestamps, CDP heap snapshots, instrumented Radix Worker |
+| `build.mjs` | Builds `dist/` and checks installed versions against `config.json` and `lab/config.js` |
 
 ## Matched rendering presets
 
-The build copies the lab config unchanged into `dist/lab-config.js`; the harness adapters read those presets. The pinned package versions match the lab.
+The harness adapters import `lab/config.js` directly, so presets and pinned package versions always match the lab.
 
 | Setting | GSL | Spark | PlayCanvas |
 | --- | --- | --- | --- |
@@ -51,18 +66,19 @@ Spark's radius limits are focal-scaled; PlayCanvas's minimum projected size is m
 
 Every backend measures static and moving versions of both the main and closer side views. PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.6.2 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
 
-Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). Viewer retains its update loop but suppresses automatic draws. Its loading timer includes Viewer initialization, model loading and initial rendering, ending at the `firstFrame` event. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
+Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). The harness drives Viewer updates and draws at the fixed physical resolution. Its loading timer includes Viewer initialization, model loading and initial rendering, ending at the `firstFrame` event. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
 
 ## Measurement definitions
 
-- **GPU frame time:** WebGL2 elapsed query; WebGPU earliest pass start to latest pass end. Summing pass durations can double-count overlapping work on Apple GPUs.
+- **GPU timestamps:** collected only in the separate WebGPU sorting diagnostic. Frame-ranking samples do not issue elapsed or timestamp queries. Summing pass durations can double-count overlapping work on Apple GPUs.
 - **CPU submission:** synchronous draw-call wall time, excluding asynchronous work. PlayCanvas includes `app.update` + `app.render`.
-- **Frame Completion P50/P95:** per-run median and 95th percentile, then the median of each percentile across three runs. Timing includes submission, GPU completion and query readback with one frame in flight. This is neither isolated GPU execution nor display FPS. The lab also measures completion, but has no timestamp-query readback instrumentation, so absolute values need not match the lab.
+- **Frame intervals / FPS:** the harness and lab share a sampler (`lab/frame-timing.js`). Frames are drawn with one GPU frame in flight: a new frame is submitted only after the previous frame's GPU work has completed (WebGL2 fence / WebGPU onSubmittedWorkDone); camera motion and asynchronous sorting keep running meanwhile. Each sample is the interval between consecutive frame submissions, measured with performance.now(). FPS = frames / sampled time. Each run reports FPS = frames / sampled time and P50/P95 frame intervals; across runs, each statistic is the median of the per-run values. Normal browser refresh-rate limits apply; this is the rate of GPU-completed frames, not display-present FPS.
+- **Validation boundaries:** WebGL fences or `GPUQueue.onSubmittedWorkDone()` drain work outside sampling. WebGL errors, WebGPU validation errors and device loss fail the measurement. Separate sorting diagnostics retain their completion boundaries.
 - **Worker execution:** instrumented Worker handler duration for Spark/GSL; native `sortTime` for PlayCanvas's JavaScript Worker; the native `SortKeys.sort` call for Radix's JavaScript Worker. RPC round trip is recorded separately.
 - **Async completion:** Spark/GSL native sort job start to delivery; PlayCanvas Worker request to response. Spark and Radix include GPU key readback. These have different preparation boundaries.
 - **GPU radix:** separate diagnostic, 4 warm-up iterations and 16 samples. GSL separates projection/radix for this diagnostic only; main frame timing keeps its combined submission. PlayCanvas annotates existing compute dispatch boundaries, excluding projection and interval compaction. The report uses first-to-last radix span; raw `gpuSortMs` also retains the pass sum.
-- **Motion/cache:** stationary tests continue drawing; native caches remain. Motion follows the same per-frame sinusoidal camera sequence with ±45° amplitude (90° total sweep), matching the lab amplitude. Asynchronous sorting stays active and timed draws do not await the latest sort. Preparation and captures await CPU sorting.
-- **Visible/active counts:** GSL WebGPU projection survivors, Worker active sort records, or unavailable (`null`) for PlayCanvas WebGPU. These are not equivalent visibility counts.
+- **Motion/cache:** stationary tests continue drawing; native caches remain. Motion follows the same real-time sinusoidal orbit as the lab: ±45° amplitude (90° total sweep), 8-second period, continuous across warm-up and sampling. Asynchronous sorting stays active and timed draws do not await the latest sort. Preparation and captures await CPU sorting.
+- **Visible/active counts:** GSL WebGPU projection survivors, Worker active sort records, or unavailable (`null`) for PlayCanvas. These are not equivalent visibility counts.
 - **JS heap + ArrayBuffer + WASM:** sum the post-GC main and live Worker JS heaps, main and Worker CDP backing storage, and live Worker WASM capacity. ArrayBuffer includes external-string backing storage. This is an accounting sum, not process RSS or deduplicated physical memory. Raw components remain in `results/*.json`.
 - **GPU allocation:** live buffer, texture and renderbuffer capacity, excluding measurement-query buffers. Driver overhead, alignment, swapchain and residency are unmeasured. Apple uses unified memory.
 - **Report memory:** sum CPU components within each snapshot first, take the largest sum across sorted cases per run, then the median across three runs. Aggregate explicit GPU allocation separately. GSL uses default sorting only; stochastic targets are excluded.
@@ -85,11 +101,10 @@ GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally 
 From the repository root:
 
 ```sh
-.venv/bin/python tools/analyze.py
-.venv/bin/python tools/plot.py
-.venv/bin/python tools/validate.py
+npm run report          # validate → analyze → plot into outputs/
+npm run report:publish  # same, then publish to report/ and harness/results/
 ```
 
-Generated reports go to `outputs/`. Only matching-protocol data is accepted; full validation expects 72 successful runs across three models, eight backends and three rounds (396 frame-performance groups and 72 sorting groups).
+Only matching-protocol data is accepted; full validation expects 72 successful runs across three models, eight backends and three rounds (396 frame-performance groups and 72 sorting groups). Publishing copies the raw runs and round-one captures to `harness/results/`, the report artifacts to `report/`, and regenerates `report/input-manifest.json` (hardware, model hashes, protocol, dates).
 
-To refresh only Radix sorting after completed frame runs, run `node run-sort.mjs` from `harness/`. It measures both Radix backends across three models and three interleaved rounds, with four warm-up iterations and 16 samples per run. Only the raw `sort` section is replaced; each supplement records its own timestamp, browser and execution order. Frame, memory and capture data remain from the original runs. Regenerate and publish the report snapshot afterward.
+To refresh only Radix sorting after completed frame runs, run `npm run bench:sort`. It measures both Radix backends across three models and three interleaved rounds, with four warm-up iterations and 16 samples per run. Only the raw `sort` section is replaced; each supplement records its own timestamp, browser and execution order. Frame, memory and capture data remain from the original runs. Regenerate and publish the report afterward.

@@ -6,8 +6,17 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "dev": "node tools/dev-server.mjs",
     "build": "node tools/build-site.mjs",
-    "dev": "node tools/dev-server.mjs"
+    "bench:build": "node harness/build.mjs",
+    "bench:serve": "node harness/server.mjs",
+    "bench:pilot": "node harness/run.mjs --pilot --variants",
+    "bench": "node harness/run.mjs",
+    "bench:sort": "node harness/run-sort.mjs",
+    "report": ".venv/bin/python tools/report.py",
+    "report:publish": ".venv/bin/python tools/report.py --publish",
+    "format": "prettier --write . && .venv/bin/ruff format tools",
+    "lint": "prettier --check . && .venv/bin/ruff check tools && .venv/bin/ruff format --check tools"
   },
   "dependencies": {
     "@playcanvas/splat-transform": "3.6.4",
@@ -22,7 +31,8 @@
   },
   "devDependencies": {
     "esbuild": "0.25.12",
-    "playwright": "1.55.1"
+    "playwright": "1.55.1",
+    "prettier": "3.3.3"
   },
   "overrides": {
     "@playcanvas/splat-transform": {

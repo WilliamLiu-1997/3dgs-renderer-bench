@@ -1,7 +1,7 @@
-from pathlib import Path
 import hashlib
 import subprocess
 import zipfile
+from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
 out = root / 'release'

@@ -1,158 +1,1449 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3DGS Renderer Bench · Retina</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23182327'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%2371d5b4'/%3E%3C/svg%3E"><style>
-:root{--bg:#f6f5f1;--ink:#182327;--muted:#657071;--line:#d4d8d2;--spark:#a75e2d;--playcanvas:#287c62;--gl:#3976ae;--gpu:#7454a1}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}main{max-width:1280px;margin:auto;padding:52px 44px}header{border-top:5px solid var(--ink);padding-top:22px}.eyebrow{font:12px/1.6 ui-monospace,monospace;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}h1{font-size:clamp(34px,4.5vw,64px);line-height:1.12;letter-spacing:-.055em;margin:15px 0 18px;font-weight:650}h1 span{font-weight:400;color:var(--muted);font-size:.54em;letter-spacing:-.03em}h2{font-size:26px;letter-spacing:-.03em;margin:0 0 8px;font-weight:650}h3{font-size:18px;margin:0 0 10px}p{margin:8px 0 16px}.lede{max-width:920px;font-size:17px;color:#4c5658}.rig{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;border-block:1px solid var(--line);padding:20px 0;margin:25px 0 0}.rig b{font:20px ui-monospace,monospace}.rig small{display:block;color:var(--muted);font-size:13px;margin-top:6px}.filters{display:flex;gap:18px;flex-wrap:wrap;position:sticky;top:0;background:#f6f5f1ed;backdrop-filter:blur(12px);z-index:4;padding:20px 0;border-bottom:1px solid var(--ink)}label{font-size:13px;color:var(--muted)}select{display:block;margin-top:5px;padding:9px 30px 9px 10px;border:1px solid #b8c0ba;background:white;color:var(--ink);font-size:14px;border-radius:3px;min-width:160px}section{padding:32px 0;border-bottom:1px solid var(--line)}.section-title{display:flex;justify-content:space-between;align-items:baseline;gap:14px}.section-title .small{white-space:nowrap}.small,.note{font-size:13px;color:var(--muted)}.note{line-height:1.8;max-width:1100px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;padding:24px 0 3px}.cards b{font-size:25px;letter-spacing:-.035em}.cards p{font-size:14px;color:var(--muted);margin:5px 0}.chart{width:100%;padding-top:16px}.barrow{display:grid;grid-template-columns:305px 1fr 100px;align-items:center;gap:16px;margin:14px 0}.barlabel{font-size:14px;line-height:1.35}.barlabel small{display:block;font-size:12px;color:var(--muted);margin-top:4px}.track{height:26px;background:#e7e9e3;position:relative}.bar{height:100%;min-width:2px;transition:width .2s}.barvalue{font:16px ui-monospace,monospace;text-align:right}.rounds{font-size:12px;color:var(--muted)}.table-wrap{overflow-x:auto;margin-top:18px}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:right;font-weight:500;font-size:12px;color:var(--muted);border-bottom:1px solid var(--ink);padding:11px 12px;white-space:nowrap}td{padding:12px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left;padding-left:0}tr:last-child td{border:0}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.legend{display:flex;gap:24px;flex-wrap:wrap;font-size:13px;margin:15px 0}.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:35px}.chart-grid .barrow{grid-template-columns:205px 1fr 78px;gap:10px}.chart-grid .barlabel{font-size:13px}.chart-grid .barvalue{font-size:14px}.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:20px}.gallery figure{margin:0}.gallery img{width:100%;display:block;background:#050607;aspect-ratio:1512/982;object-fit:contain;cursor:zoom-in}.gallery figcaption{display:flex;justify-content:space-between;padding:8px 0;font-size:14px}.gallery a{color:inherit}.empty{aspect-ratio:1512/982;display:grid;place-content:center;background:#e8eae5;color:var(--muted)}.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 35px}.qa-grid p{font-size:14px}.qa-grid strong{display:block;margin-bottom:5px}.downloads{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}.downloads a,button{border:1px solid var(--ink);padding:8px 15px;font:14px inherit;background:transparent;color:var(--ink);text-decoration:none;border-radius:3px;cursor:pointer}button:hover,.downloads a:hover{background:#e4e8df}a{color:#287c62}footer{padding:24px 0;font-size:12px;color:var(--muted)}.badge{padding:3px 7px;background:#e1ece5;color:#326d54;font-size:12px;border-radius:3px}.scenario-remark{margin:12px 0;font-size:14px}details{padding:10px 0}summary{cursor:pointer;font-size:14px}.full-image{display:none;position:fixed;inset:0;background:#111e;z-index:10;padding:28px;overflow:auto}.full-image.open{display:grid;place-items:center}.full-image img{max-width:100%;max-height:calc(100vh - 56px);min-width:0}.full-image button{position:fixed;right:20px;top:15px;color:white;border-color:white;background:#182327}code{font:13px ui-monospace,monospace}@media(max-width:800px){main{padding:25px 20px}.rig{grid-template-columns:1fr 1fr}.cards,.chart-grid,.qa-grid{grid-template-columns:1fr}.gallery{grid-template-columns:1fr}.filters{position:static;gap:10px}select{min-width:135px}.barrow{grid-template-columns:180px 1fr 80px;gap:8px}.barlabel{font-size:12px}.barvalue{font-size:14px}h1{font-size:40px}.cards{gap:18px}.section-title{display:block}}@media print{.filters,.downloads,.full-image{display:none}main{max-width:none;padding:12px}.gallery{break-inside:avoid}section{break-inside:avoid}.track{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>3DGS Renderer Bench · Retina</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23182327'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%2371d5b4'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #f6f5f1;
+        --ink: #182327;
+        --muted: #657071;
+        --line: #d4d8d2;
+        --spark: #a75e2d;
+        --playcanvas: #287c62;
+        --gl: #3976ae;
+        --gpu: #7454a1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.65 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'PingFang SC',
+          sans-serif;
+      }
+      main {
+        max-width: 1280px;
+        margin: auto;
+        padding: 52px 44px;
+      }
+      header {
+        border-top: 5px solid var(--ink);
+        padding-top: 22px;
+      }
+      .eyebrow {
+        font:
+          12px/1.6 ui-monospace,
+          monospace;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      h1 {
+        font-size: clamp(34px, 4.5vw, 64px);
+        line-height: 1.12;
+        letter-spacing: -0.055em;
+        margin: 15px 0 18px;
+        font-weight: 650;
+      }
+      h1 span {
+        font-weight: 400;
+        color: var(--muted);
+        font-size: 0.54em;
+        letter-spacing: -0.03em;
+      }
+      h2 {
+        font-size: 26px;
+        letter-spacing: -0.03em;
+        margin: 0 0 8px;
+        font-weight: 650;
+      }
+      h3 {
+        font-size: 18px;
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 8px 0 16px;
+      }
+      .lede {
+        max-width: 920px;
+        font-size: 17px;
+        color: #4c5658;
+      }
+      .rig {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        border-block: 1px solid var(--line);
+        padding: 20px 0;
+        margin: 25px 0 0;
+      }
+      .rig b {
+        font:
+          20px ui-monospace,
+          monospace;
+      }
+      .rig small {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 6px;
+      }
+      .filters {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        position: sticky;
+        top: 0;
+        background: #f6f5f1ed;
+        backdrop-filter: blur(12px);
+        z-index: 4;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--ink);
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      select {
+        display: block;
+        margin-top: 5px;
+        padding: 9px 30px 9px 10px;
+        border: 1px solid #b8c0ba;
+        background: white;
+        color: var(--ink);
+        font-size: 14px;
+        border-radius: 3px;
+        min-width: 160px;
+      }
+      section {
+        padding: 32px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 14px;
+      }
+      .section-title .small {
+        white-space: nowrap;
+      }
+      .small,
+      .note {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .note {
+        line-height: 1.8;
+        max-width: 1100px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+        padding: 24px 0 3px;
+      }
+      .cards b {
+        font-size: 25px;
+        letter-spacing: -0.035em;
+      }
+      .cards p {
+        font-size: 14px;
+        color: var(--muted);
+        margin: 5px 0;
+      }
+      .chart {
+        width: 100%;
+        padding-top: 16px;
+      }
+      .barrow {
+        display: grid;
+        grid-template-columns: 305px 1fr 100px;
+        align-items: center;
+        gap: 16px;
+        margin: 14px 0;
+      }
+      .barlabel {
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      .barlabel small {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .track {
+        height: 26px;
+        background: #e7e9e3;
+        position: relative;
+      }
+      .bar {
+        height: 100%;
+        min-width: 2px;
+        transition: width 0.2s;
+      }
+      .barvalue {
+        font:
+          16px ui-monospace,
+          monospace;
+        text-align: right;
+      }
+      .rounds {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .table-wrap {
+        overflow-x: auto;
+        margin-top: 18px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th {
+        text-align: right;
+        font-weight: 500;
+        font-size: 12px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--ink);
+        padding: 11px 12px;
+        white-space: nowrap;
+      }
+      td {
+        padding: 12px;
+        text-align: right;
+        border-bottom: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      th:first-child,
+      td:first-child {
+        text-align: left;
+        padding-left: 0;
+      }
+      tr:last-child td {
+        border: 0;
+      }
+      .dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .legend {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        margin: 15px 0;
+      }
+      .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 35px;
+      }
+      .chart-grid .barrow {
+        grid-template-columns: 205px 1fr 78px;
+        gap: 10px;
+      }
+      .chart-grid .barlabel {
+        font-size: 13px;
+      }
+      .chart-grid .barvalue {
+        font-size: 14px;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px;
+        margin-top: 20px;
+      }
+      .gallery figure {
+        margin: 0;
+      }
+      .gallery img {
+        width: 100%;
+        display: block;
+        background: #050607;
+        aspect-ratio: 1512/982;
+        object-fit: contain;
+        cursor: zoom-in;
+      }
+      .gallery figcaption {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 14px;
+      }
+      .gallery a {
+        color: inherit;
+      }
+      .empty {
+        aspect-ratio: 1512/982;
+        display: grid;
+        place-content: center;
+        background: #e8eae5;
+        color: var(--muted);
+      }
+      .qa-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px 35px;
+      }
+      .qa-grid p {
+        font-size: 14px;
+      }
+      .qa-grid strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .downloads {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 15px 0;
+      }
+      .downloads a,
+      button {
+        border: 1px solid var(--ink);
+        padding: 8px 15px;
+        font: 14px inherit;
+        background: transparent;
+        color: var(--ink);
+        text-decoration: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover,
+      .downloads a:hover {
+        background: #e4e8df;
+      }
+      a {
+        color: #287c62;
+      }
+      footer {
+        padding: 24px 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .badge {
+        padding: 3px 7px;
+        background: #e1ece5;
+        color: #326d54;
+        font-size: 12px;
+        border-radius: 3px;
+      }
+      .scenario-remark {
+        margin: 12px 0;
+        font-size: 14px;
+      }
+      details {
+        padding: 10px 0;
+      }
+      summary {
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .full-image {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #111e;
+        z-index: 10;
+        padding: 28px;
+        overflow: auto;
+      }
+      .full-image.open {
+        display: grid;
+        place-items: center;
+      }
+      .full-image img {
+        max-width: 100%;
+        max-height: calc(100vh - 56px);
+        min-width: 0;
+      }
+      .full-image button {
+        position: fixed;
+        right: 20px;
+        top: 15px;
+        color: white;
+        border-color: white;
+        background: #182327;
+      }
+      code {
+        font:
+          13px ui-monospace,
+          monospace;
+      }
+      @media (max-width: 800px) {
+        main {
+          padding: 25px 20px;
+        }
+        .rig {
+          grid-template-columns: 1fr 1fr;
+        }
+        .cards,
+        .chart-grid,
+        .qa-grid {
+          grid-template-columns: 1fr;
+        }
+        .gallery {
+          grid-template-columns: 1fr;
+        }
+        .filters {
+          position: static;
+          gap: 10px;
+        }
+        select {
+          min-width: 135px;
+        }
+        .barrow {
+          grid-template-columns: 180px 1fr 80px;
+          gap: 8px;
+        }
+        .barlabel {
+          font-size: 12px;
+        }
+        .barvalue {
+          font-size: 14px;
+        }
+        h1 {
+          font-size: 40px;
+        }
+        .cards {
+          gap: 18px;
+        }
+        .section-title {
+          display: block;
+        }
+      }
+      @media print {
+        .filters,
+        .downloads,
+        .full-image {
+          display: none;
+        }
+        main {
+          max-width: none;
+          padding: 12px;
+        }
+        .gallery {
+          break-inside: avoid;
+        }
+        section {
+          break-inside: avoid;
+        }
+        .track {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
 
-.precision-table td{text-align:left;vertical-align:top;min-width:160px}.precision-table th{text-align:left}.precision-table td:first-child{min-width:175px}.precision-table code{white-space:nowrap}.filters select{min-width:145px}.language{margin-left:auto}
-.winner{display:inline-block;padding:2px 6px;border-radius:4px;background:#e1eee5;color:#17613b;font-weight:700;white-space:nowrap}.barrow[data-best="true"] .track{outline:2px solid #2e7653;outline-offset:2px}.barrow .badge{margin-left:6px;white-space:nowrap}.winner-legend{margin:16px 0 4px}
-.report-options{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin:-8px 0 16px}.report-options .language{margin:0}.report-options select{min-width:145px}
-h1 a{color:inherit;text-decoration:underline;text-decoration-color:#b8c0ba;text-decoration-thickness:1px;text-underline-offset:.16em}h1 a:hover{color:var(--ink);text-decoration-color:currentColor}.gallery figcaption{gap:12px}.gallery figcaption a{white-space:nowrap;align-self:flex-start}
-.render-group{margin-top:22px}.render-group .chart{padding-top:0}.render-group h3{font-size:14px;color:var(--muted);font-weight:500;margin:0}.raw-group{margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}details h3{margin-top:18px}
-#memoryTable th{white-space:normal;min-width:120px}#memoryTable th:first-child{min-width:235px}</style></head><body><main>
-<header><div class="report-options"><div class="eyebrow"><span data-i18n="eyebrow">Measured locally · Apple M5 Pro</span><br><span id="testDate"></span></div><label class="language"><span data-i18n="language">Language</span><select id="language"><option value="en" selected>English</option><option value="zh">中文</option></select></label></div><h1>3DGS Renderer Bench<br><span><a href="https://github.com/sparkjsdev/spark" target="_blank" rel="noopener noreferrer">Spark</a> · <a href="https://github.com/sparkjsdev/radix" target="_blank" rel="noopener noreferrer">Radix</a> · <a href="https://github.com/playcanvas/engine" target="_blank" rel="noopener noreferrer">PlayCanvas</a> · <a href="https://github.com/playcanvas/supersplat-viewer" target="_blank" rel="noopener noreferrer">SuperSplat Viewer</a> · <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite" target="_blank" rel="noopener noreferrer">Gaussian Splat Lite</a></span></h1>
-<p data-i18n="lede" class="lede">Rendering, sorting and memory measured on the same original PLY files, cameras and full models at Retina resolution. Rendering settings are adjusted as closely as possible. Depth-sorted groups use radial ordering; stochastic groups retain native behavior without temporal accumulation.</p>
-<div class="rig"><div><b>3024 × 1964</b><small data-i18n="pixels">1512 × 982 CSS px · DPR 2 · No MSAA</small></div><div><b id="modelCount"></b><small id="modelName"></small></div><div><b data-i18n="chip">M5 Pro · 16 GPU cores</b><small data-i18n="ram">48 GiB unified memory · macOS 26.7</small></div><div><b id="browser"></b><small id="roundLabel"></small></div></div></header>
-<nav class="filters" aria-label="Report filters">
-<label><span data-i18n="modelLabel">Model</span><select id="model"><option data-i18n="hotel" value="hotel" selected>HotelFareza · 12.20M</option><option data-i18n="elevator" value="elevator">Elevator · 2.80M</option></select></label>
-<label><span data-i18n="scenarioLabel">Scene</span><select id="scenario"><option data-i18n="moving" value="moving" selected>Moving · main view</option><option data-i18n="static" value="static">Static · main view</option><option data-i18n="closeMoving" value="close-moving">Moving · closer side view</option><option data-i18n="close" value="close">Static · closer side view</option></select></label>
-<label><span data-i18n="metricLabel">Metric</span><select id="metric"><option data-i18n="completion50" value="completion" selected>Frame Completion P50</option><option data-i18n="completion95" value="completion95">Frame Completion P95</option></select></label>
+      .precision-table td {
+        text-align: left;
+        vertical-align: top;
+        min-width: 160px;
+      }
+      .precision-table th {
+        text-align: left;
+      }
+      .precision-table td:first-child {
+        min-width: 175px;
+      }
+      .precision-table code {
+        white-space: nowrap;
+      }
+      .filters select {
+        min-width: 145px;
+      }
+      .language {
+        margin-left: auto;
+      }
+      .winner {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #e1eee5;
+        color: #17613b;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .barrow[data-best='true'] .track {
+        outline: 2px solid #2e7653;
+        outline-offset: 2px;
+      }
+      .barrow .badge {
+        margin-left: 6px;
+        white-space: nowrap;
+      }
+      .winner-legend {
+        margin: 16px 0 4px;
+      }
+      .report-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin: -8px 0 16px;
+      }
+      .report-options .language {
+        margin: 0;
+      }
+      .report-options select {
+        min-width: 145px;
+      }
+      h1 a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: #b8c0ba;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.16em;
+      }
+      h1 a:hover {
+        color: var(--ink);
+        text-decoration-color: currentColor;
+      }
+      .gallery figcaption {
+        gap: 12px;
+      }
+      .gallery figcaption a {
+        white-space: nowrap;
+        align-self: flex-start;
+      }
+      .render-group {
+        margin-top: 22px;
+      }
+      .render-group .chart {
+        padding-top: 0;
+      }
+      .render-group h3 {
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 500;
+        margin: 0;
+      }
+      .raw-group {
+        margin-top: 28px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+      }
+      details h3 {
+        margin-top: 18px;
+      }
+      #memoryTable th {
+        white-space: normal;
+        min-width: 120px;
+      }
+      #memoryTable th:first-child {
+        min-width: 235px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="report-options">
+          <div class="eyebrow">
+            <span data-i18n="eyebrow">Measured locally · Apple M5 Pro</span>
+            <br />
+            <span id="testDate"></span>
+          </div>
+          <label class="language">
+            <span data-i18n="language">Language</span>
+            <select id="language">
+              <option value="en" selected>English</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+        </div>
+        <h1>
+          3DGS Renderer Bench
+          <br />
+          <span>
+            <a href="https://github.com/sparkjsdev/spark" target="_blank" rel="noopener noreferrer">Spark</a>
+            ·
+            <a href="https://github.com/sparkjsdev/radix" target="_blank" rel="noopener noreferrer">Radix</a>
+            ·
+            <a href="https://github.com/playcanvas/engine" target="_blank" rel="noopener noreferrer">PlayCanvas</a>
+            ·
+            <a href="https://github.com/playcanvas/supersplat-viewer" target="_blank" rel="noopener noreferrer">
+              SuperSplat Viewer
+            </a>
+            ·
+            <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite" target="_blank" rel="noopener noreferrer">
+              Gaussian Splat Lite
+            </a>
+          </span>
+        </h1>
+        <p data-i18n="lede" class="lede">
+          Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with
+          settings aligned as closely as possible. Sorted groups use radial ordering; stochastic groups keep native
+          behavior without temporal accumulation.
+        </p>
+        <div class="rig">
+          <div>
+            <b>3024 × 1964</b>
+            <small data-i18n="pixels">1512 × 982 CSS px · DPR 2 · No MSAA</small>
+          </div>
+          <div>
+            <b id="modelCount"></b>
+            <small id="modelName"></small>
+          </div>
+          <div>
+            <b data-i18n="chip">M5 Pro · 16 GPU cores</b>
+            <small data-i18n="ram">48 GiB unified memory · macOS 26.7</small>
+          </div>
+          <div>
+            <b id="browser"></b>
+            <small id="roundLabel"></small>
+          </div>
+        </div>
+      </header>
+      <nav class="filters" aria-label="Report filters">
+        <label>
+          <span data-i18n="modelLabel">Model</span>
+          <select id="model">
+            <option data-i18n="hotel" value="hotel" selected>HotelFareza · 12.20M</option>
+            <option data-i18n="elevator" value="elevator">Elevator · 2.80M</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="scenarioLabel">Scene</span>
+          <select id="scenario">
+            <option data-i18n="moving" value="moving" selected>Moving · main view</option>
+            <option data-i18n="static" value="static">Static · main view</option>
+            <option data-i18n="closeMoving" value="close-moving">Moving · closer side view</option>
+            <option data-i18n="close" value="close">Static · closer side view</option>
+          </select>
+        </label>
+        <label>
+          <span data-i18n="metricLabel">Metric</span>
+          <select id="metric">
+            <option data-i18n="fps" value="fps">FPS</option>
+            <option data-i18n="frameP50" value="frameP50" selected>Frame interval P50</option>
+            <option data-i18n="frameP95" value="frameP95">Frame interval P95</option>
+          </select>
+        </label>
+      </nav>
+      <section>
+        <div class="section-title">
+          <h2 data-i18n="currentScene">Current scene</h2>
+          <span id="metricDirection" data-i18n="lower" class="small">ms · Lower is better</span>
+        </div>
+        <p class="scenario-remark" id="sceneNote"></p>
+        <p class="note winner-legend" data-i18n="winnerLegend">
+          Green marks the best value in each group; sorted and raw stochastic are ranked separately, ties shared.
+        </p>
+        <div class="render-group">
+          <h3 data-i18n="sortedGroup">Depth-sorted rendering</h3>
+          <div id="mainChart" class="chart"></div>
+        </div>
+        <div class="render-group raw-group">
+          <h3 data-i18n="rawGroup">Raw stochastic rendering</h3>
+          <div id="rawChart" class="chart"></div>
+          <p class="note" data-i18n="sceneStoch">
+            Native raw sampling, no spatial resolve or temporal accumulation. GSL keeps its 16-bit front-to-back sort;
+            PlayCanvas skips sorting. Sampling patterns differ.
+          </p>
+        </div>
+        <details open>
+          <summary data-i18n="perRun">Selected metric per run</summary>
+          <h3 data-i18n="sortedGroup">Depth-sorted rendering</h3>
+          <div id="mainTable" class="table-wrap"></div>
+          <h3 data-i18n="rawGroup">Raw stochastic rendering</h3>
+          <div id="rawTable" class="table-wrap"></div>
+        </details>
+        <p data-i18n="frameNote" class="note">
+          One GPU frame in flight: each frame is submitted only after the previous one has finished on the GPU (WebGL2
+          fence / WebGPU onSubmittedWorkDone). Without this wait the CPU runs ahead, intervals look short and the queued
+          work later shows up as stalls. Each sample is the interval between submissions; FPS = frames / sampled time.
+          Values are medians across runs.
+        </p>
+        <div class="cards" id="findings"></div>
+      </section>
+      <section>
+        <h2 data-i18n="sortingTitle">Where sorting runs</h2>
+        <p data-i18n="sortingNote" class="note">
+          Worker sorts run asynchronously; GPU sorts run in the GPU command stream. Async completion covers preparation,
+          transfer, sorting and hand-back. Each run alternates two camera directions: 4 warm-up iterations, 16 samples.
+        </p>
+        <div id="sortTable" class="table-wrap"></div>
+        <p id="sortSupplement" class="note" hidden></p>
+        <p data-i18n="sortDiagnostic" class="note">
+          The radix diagnostic measures the first-to-last pass span. GSL splits projection and radix only here; Engine,
+          Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full sort per sample (GPU key
+          readback + Worker sort). Pipelines and active counts differ, so these are not equal-input algorithm
+          comparisons.
+        </p>
+      </section>
+      <section>
+        <h2 data-i18n="precisionTitle">Sorting precision, explained</h2>
+        <p data-i18n="precisionIntro" class="note">
+          All sorted groups use radial ordering. Engines encode distance or squared distance, so equal key widths do not
+          mean equal quantization; async results may lag the camera.
+        </p>
+        <div class="table-wrap precision-table">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="renderer">Renderer</th>
+                <th data-i18n="keyEncoding">Sort key</th>
+                <th data-i18n="implementation">Execution</th>
+                <th data-i18n="precisionEffect">Precision and trade-off</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Spark · WebGL2</td>
+                <td><span data-i18n="sparkKey">32-bit float sort metric, all bits retained</span></td>
+                <td><span data-i18n="sparkExec">GPU key readback → Worker/WASM; 2 × 16-bit radix digits</span></td>
+                <td>
+                  <span data-i18n="sparkPrec">
+                    float32 depth key, no extra truncation. GPU readback and Worker transfers add async latency.
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>PlayCanvas · WebGL2 / WebGPU</td>
+                <td>
+                  <span data-i18n="ssKey">
+                    Log-spaced keys from float32 squared-distance bits. WebGL2: 16 bits; WebGPU: 16–20 bits, rounded to
+                    the radix width.
+                  </span>
+                </td>
+                <td>
+                  <span data-i18n="ssExec">
+                    WebGL2: JavaScript Worker counting sort. WebGPU: portable 4-bit radix on this Apple GPU.
+                  </span>
+                </td>
+                <td>
+                  <span data-i18n="ssPrec">
+                    Keys are rescaled over the current distance range; precision depends on the near clip and active
+                    scene bounds.
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Radix · WebGL2 / WebGPU</td>
+                <td>
+                  <span data-i18n="radixKey">Default 24-bit radial-distance key; lowest 7 float32 bits removed</span>
+                </td>
+                <td>
+                  <span data-i18n="radixExec">
+                    WebGL2: GPU key readback → JavaScript Worker, 11 + 13-bit radix digits. WebGPU: 3 × 8-bit radix
+                    digits.
+                  </span>
+                </td>
+                <td>
+                  <span data-i18n="radixPrec">
+                    16 fraction bits (GSL default: 15). Both encode camera distance. WebGL2 readback and Worker
+                    transfers add async latency.
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>SuperSplat Viewer · WebGPU</td>
+                <td><span data-i18n="viewerKey">Engine WebGPU log-spaced squared-distance keys</span></td>
+                <td><span data-i18n="viewerExec">WebGPU: Engine portable 4-bit radix on this Apple GPU.</span></td>
+                <td>
+                  <span data-i18n="viewerPrec">
+                    Same key mapping and precision as PlayCanvas WebGPU; native pass boundaries.
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><span data-i18n="gslDefault">Gaussian Splat Lite · default</span></td>
+                <td><span data-i18n="gslDefaultKey">Upper 24 bits of the float32 key; lowest 8 bits removed</span></td>
+                <td>
+                  <span data-i18n="gslDefaultExec">
+                    WebGL2: Worker/WASM, one counting pass over 23 effective bits (sign bit fixed). WebGPU: 3 × 8-bit
+                    radix digits.
+                  </span>
+                </td>
+                <td>
+                  <span data-i18n="gslDefaultPrec">
+                    15 fraction bits; camera distance on both backends. WebGL2 uses a 32 MiB count table.
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p data-i18n="precisionNumbers" class="note">
+          PlayCanvas and Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU sorting uses
+          16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit radix on this
+          Apple GPU).
+        </p>
+        <p data-i18n="precisionLimit" class="note">
+          Nearly coincident splats may share a key, changing alpha blending; sorting is by Gaussian center, not per
+          pixel. Sorted GSL uses its default 24-bit sort; Spark uses extended encoding throughout. Raw stochastic GSL
+          uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.
+        </p>
+        <p class="note">
+          <a href="https://github.com/sparkjsdev/spark/blob/v2.4.0/rust/spark-rs/src/sort.rs">Spark sort source</a>
+          ·
+          <a
+            href="https://github.com/playcanvas/engine/tree/876ba2e7dffc246b1008695f23f60ac1a9b96109/src/scene/gsplat-unified"
+          >
+            PlayCanvas depth keys
+          </a>
+          ·
+          <a
+            href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/rust/gaussian-splat-rs/src/sort.rs"
+          >
+            Gaussian Splat Lite Worker sort source
+          </a>
+          ·
+          <a
+            href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/src/rendering/webgpu/ProjectionKernel.js"
+          >
+            Gaussian Splat Lite GPU depth keys
+          </a>
+        </p>
+      </section>
+      <section>
+        <h2 data-i18n="memoryTitle">Memory</h2>
+        <p data-i18n="memoryMethod" class="note">
+          Per post-GC snapshot: JS heap + ArrayBuffer/external storage + WASM capacity across the main thread and live
+          Workers. Maximum over sorted cases per run, then the median of three runs. GPU allocation is separate;
+          stochastic render targets are excluded. MiB = 2²⁰ bytes.
+        </p>
+        <div class="chart-grid">
+          <div>
+            <h3 data-i18n="heapChartTitle">JS heap + ArrayBuffer + WASM · MiB</h3>
+            <div id="heapMemory"></div>
+          </div>
+          <div>
+            <h3 data-i18n="gpuChartTitle">Explicit GPU allocation · MiB</h3>
+            <div id="gpuMemory"></div>
+          </div>
+        </div>
+        <div id="memoryTable" class="table-wrap"></div>
+        <p data-i18n="heapMeaning" class="note">
+          An accounting sum (ArrayBuffer includes external-string storage; WASM is live Worker linear-memory capacity),
+          not process RSS or deduplicated physical memory. Components are in harness/results.
+        </p>
+        <p data-i18n="gpuMeaning" class="note">
+          GPU allocation counts buffer, texture and renderbuffer capacity, excluding query buffers, driver overhead,
+          alignment and the swapchain. It is allocated capacity, not physical VRAM (Apple uses unified memory). Browser
+          RSS is kept only as raw diagnostics.
+        </p>
+        <p class="note">
+          <a href="https://chromedevtools.github.io/devtools-protocol/tot/Runtime/#method-getHeapUsage">
+            Chrome DevTools Protocol · Runtime.getHeapUsage
+          </a>
+        </p>
+      </section>
+      <section>
+        <div class="section-title">
+          <h2 data-i18n="imagesTitle">Image comparison</h2>
+          <label>
+            <span data-i18n="displayMode">Display</span>
+            <select id="imageVariant">
+              <option data-i18n="sortedImage" value="sorted">Normal sorting</option>
+              <option data-i18n="stochImage" value="stochastic">Stochastic · raw</option>
+            </select>
+          </label>
+        </div>
+        <p data-i18n="imageNote" class="note">
+          Fixed matching cameras, 3024 × 1964 captures; click a render for the original. GSL WebGPU blends in sRGB to
+          match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no spatial resolve
+          or temporal accumulation.
+        </p>
+        <div class="gallery" id="gallery"></div>
+        <div id="qualityTable" class="table-wrap"></div>
+        <p data-i18n="qualityNote" class="note">
+          MAE (RGB 0–255) and PSNR compare each backend with its own sorted capture. They measure image change, not
+          quality or ranking.
+        </p>
+      </section>
+      <section>
+        <h2 data-i18n="boundsTitle">Measurement scope</h2>
+        <div class="qa-grid">
+          <p>
+            <strong data-i18n="inputTitle">Full inputs, fixed resolution</strong>
+            <span data-i18n="inputTitleBody">
+              Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY/SH3, 3024 ×
+              1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="sparkTitle">Spark source precision</strong>
+            <span data-i18n="sparkTitleBody">
+              Extended source and accumulator encoding, SH3 retained. Base records are 32 bytes with float32 positions;
+              “extended” does not make every field float32.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="gslSourceTitle">Gaussian Splat Lite source and accumulator</strong>
+            <span data-i18n="gslSourceBody">
+              Published source and accumulator encodings with full input SH. Effective settings and versions are
+              recorded per run.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="gslProcessingTitle">Three.js versions</strong>
+            <span data-i18n="gslProcessingBody">
+              GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native
+              sorting and caching stay on.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="ssTitle">PlayCanvas Engine and rendering settings</strong>
+            <span data-i18n="ssTitleBody">
+              Engine and Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255,
+              antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. GSL: minimum radius 1,
+              no maximum. Native coverage and projection may still differ.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="editorTitle">SuperSplat Viewer</strong>
+            <span data-i18n="editorBody">
+              Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera
+              and resolution; post effects and performance scaling off; model rotation reset to match the PLY.
+            </span>
+          </p>
+          <p>
+            <strong data-i18n="cacheTitle">Caching and motion</strong>
+            <span data-i18n="cacheTitleBody">
+              Static tests keep drawing with native caches. Moving tests use the lab's real-time orbit (±45°, 8 s
+              period). Async sorting stays active, so frames may use an earlier order.
+            </span>
+          </p>
 
-</nav>
-<section><div class="section-title"><h2 data-i18n="currentScene">Current scene</h2><span data-i18n="lower" class="small">ms · Lower is better</span></div><p class="scenario-remark" id="sceneNote"></p><p class="note winner-legend" data-i18n="winnerLegend">Green highlights mark the lowest displayed value within each group: depth-sorted and raw stochastic rendering are ranked separately. Ties are shared.</p><div class="render-group"><h3 data-i18n="sortedGroup">Depth-sorted rendering</h3><div id="mainChart" class="chart"></div></div><div class="render-group raw-group"><h3 data-i18n="rawGroup">Raw stochastic rendering</h3><div id="rawChart" class="chart"></div><p class="note" data-i18n="sceneStoch">Native raw sampling, without spatial resolve or temporal accumulation. GSL 1.6.2 retains its default 16-bit front-to-back stochastic sorting; PlayCanvas skips depth sorting. Native sampling patterns differ.</p></div><details open><summary data-i18n="perRun">Selected metric per run</summary><h3 data-i18n="sortedGroup">Depth-sorted rendering</h3><div id="mainTable" class="table-wrap"></div><h3 data-i18n="rawGroup">Raw stochastic rendering</h3><div id="rawTable" class="table-wrap"></div></details>
-<p data-i18n="frameNote" class="note">Frame Completion P50/P95 are the per-run median and 95th percentile, each aggregated as the median of three independent runs. Timing includes submission, GPU completion and timestamp-query readback, with one frame in flight. This is not the display refresh interval or isolated GPU execution. Per-frame GPU timestamps remain in the raw diagnostic data.</p>
-<div class="cards" id="findings"></div></section>
-<section><h2 data-i18n="sortingTitle">Where sorting runs</h2>
-<p data-i18n="sortingNote" class="note">Worker sorting runs asynchronously; GPU sorting is ordered within the GPU command stream. Async completion includes preparation, transfers, sorting and handing back the result. A separate diagnostic measures the first-to-last radix pass span. Each run alternates between two camera directions, with 4 warm-up iterations and 16 measured samples.</p>
-<div id="sortTable" class="table-wrap"></div>
-<p id="sortSupplement" class="note" hidden></p>
-<p data-i18n="sortDiagnostic" class="note">GSL separates projection and radix only for this diagnostic. Engine, Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one complete sort per sample: GPU key projection/readback plus Worker sorting and result delivery. Worker execution and message round trip are shown separately. Frame tests retain asynchronous sorting. Native pipelines and active counts differ; these are not equal-input sorting algorithms.</p>
-</section>
-<section><h2 data-i18n="precisionTitle">Sorting precision, explained</h2>
-<p data-i18n="precisionIntro" class="note">All depth-sorted groups use radial ordering. Source encoding, key precision and sort latency are separate properties. Engines may encode distance or squared distance, so equal key widths do not guarantee equal quantization. Asynchronous results may lag behind the camera.</p>
-<div class="table-wrap precision-table"><table><thead><tr><th data-i18n="renderer">Renderer</th><th data-i18n="keyEncoding">Sort key</th><th data-i18n="implementation">Execution</th><th data-i18n="precisionEffect">Precision and trade-off</th></tr></thead><tbody>
-<tr><td>Spark · WebGL2</td><td><span data-i18n="sparkKey">32-bit float sort metric, all bits retained</span></td><td><span data-i18n="sparkExec">GPU key readback → Worker/WASM; 2 × 16-bit radix digits</span></td><td><span data-i18n="sparkPrec">No extra truncation of the float32 depth key. GPU readback and Worker transfers contribute to async completion latency.</span></td></tr>
-<tr><td>PlayCanvas · WebGL2 / WebGPU</td><td><span data-i18n="ssKey">Log-spaced keys from float32 squared-distance bits. WebGL2: 16 bits; WebGPU: 16–20 bits, rounded to the radix width.</span></td><td><span data-i18n="ssExec">WebGL2: JavaScript Worker counting sort. WebGPU: portable 4-bit radix on this Apple GPU.</span></td><td><span data-i18n="ssPrec">Keys are rescaled over the current distance range; precision depends on the near clip and active scene bounds.</span></td></tr>
-<tr><td>Radix · WebGL2 / WebGPU</td><td><span data-i18n="radixKey">Default 24-bit radial-distance key; lowest 7 float32 bits removed</span></td><td><span data-i18n="radixExec">WebGL2: GPU key readback → JavaScript Worker, 11 + 13-bit radix digits. WebGPU: 3 × 8-bit radix digits.</span></td><td><span data-i18n="radixPrec">16 fraction bits remain, versus 15 in GSL’s default key. GSL 1.6.2 and Radix both encode camera distance. GPU readback and Worker transfers contribute to WebGL2 async completion latency.</span></td></tr>
-<tr><td>SuperSplat Viewer · WebGPU</td><td><span data-i18n="viewerKey">Engine WebGPU log-spaced squared-distance keys</span></td><td><span data-i18n="viewerExec">WebGPU: Engine portable 4-bit radix on this Apple GPU.</span></td><td><span data-i18n="viewerPrec">Uses the same Engine WebGPU key mapping and precision selection as PlayCanvas WebGPU. GPU timing follows native pass boundaries.</span></td></tr>
-<tr><td><span data-i18n="gslDefault">Gaussian Splat Lite · default</span></td><td><span data-i18n="gslDefaultKey">Upper 24 bits of the float32 key; lowest 8 bits removed</span></td><td><span data-i18n="gslDefaultExec">WebGL2: Worker/WASM, one counting pass over 23 effective bits (sign bit fixed). WebGPU: 3 × 8-bit radix digits.</span></td><td><span data-i18n="gslDefaultPrec">15 fraction bits remain. GSL 1.6.2 uses camera distance for radial sorting on both backends. WebGL2 uses a 32 MiB count table.</span></td></tr>
-</tbody></table></div>
-<p data-i18n="precisionNumbers" class="note">PlayCanvas and Viewer map squared-distance float bits over a range starting at nearClip / 1024 and ending at the active scene bound. CPU radial sorting uses 16-bit counting keys; GPU sorting chooses 16–20 bits from the active count and rounds to the radix width. This Apple GPU uses portable 4-bit radix. Equal key widths do not establish image equivalence.</p>
-<p data-i18n="precisionLimit" class="note">Nearly coincident splats can share a quantized key and change alpha blending. Sorting uses Gaussian center distance and does not provide per-pixel ordering for intersecting Gaussians. Ordinary depth-sorted GSL cases use its default 24-bit sorting. Spark uses extended source and accumulator encoding in timing and image tests. Raw stochastic GSL frames instead use the default 16-bit axial front-to-back ordering; PlayCanvas stochastic rendering skips sorting.</p>
-<p class="note"><a href="https://github.com/sparkjsdev/spark/blob/v2.4.0/rust/spark-rs/src/sort.rs">Spark sort source</a> · <a href="https://github.com/playcanvas/engine/tree/876ba2e7dffc246b1008695f23f60ac1a9b96109/src/scene/gsplat-unified">PlayCanvas depth keys</a> · <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/rust/gaussian-splat-rs/src/sort.rs">Gaussian Splat Lite Worker sort source</a> · <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/src/rendering/webgpu/ProjectionKernel.js">Gaussian Splat Lite GPU depth keys</a></p>
-</section>
-<section><h2 data-i18n="memoryTitle">Memory</h2>
-<p data-i18n="memoryMethod" class="note">Sum JS heap, ArrayBuffer/external backing storage and WASM capacity within each post-GC snapshot, including the main thread and live Workers. Take the maximum across sorted cases per run, then the median across three runs. GPU allocation is aggregated separately. Stochastic render targets are excluded. MiB = 2²⁰ bytes.</p>
-<div class="chart-grid"><div><h3 data-i18n="heapChartTitle">JS heap + ArrayBuffer + WASM · MiB</h3><div id="heapMemory"></div></div><div><h3 data-i18n="gpuChartTitle">Explicit GPU allocation · MiB</h3><div id="gpuMemory"></div></div></div><div id="memoryTable" class="table-wrap"></div>
-<p data-i18n="heapMeaning" class="note">The combined value is the sum of the recorded memory categories. ArrayBuffer includes CDP external-string backing storage; WASM uses live Worker linear-memory capacity. It is an accounting sum, not process RSS or deduplicated physical memory. Raw component measurements remain in harness/results.</p>
-<p data-i18n="gpuMeaning" class="note">Explicit GPU allocation tracks buffer, texture and renderbuffer capacity, excluding measurement-query buffers, driver overhead, alignment and the swapchain. It is allocated resource capacity, not physical VRAM usage; Apple uses unified memory. Browser process-tree RSS includes unrelated browser/GPU-process memory and can double-count shared pages, so it is retained only as raw diagnostics, not used for the memory comparison.</p>
-<p class="note"><a href="https://chromedevtools.github.io/devtools-protocol/tot/Runtime/#method-getHeapUsage">Chrome DevTools Protocol · Runtime.getHeapUsage</a></p>
-</section>
-<section><div class="section-title"><h2 data-i18n="imagesTitle">Image comparison</h2><label><span data-i18n="displayMode">Display</span><select id="imageVariant"><option data-i18n="sortedImage" value="sorted">Normal sorting</option><option data-i18n="stochImage" value="stochastic">Stochastic · raw</option></select></label></div>
-<p data-i18n="imageNote" class="note">Fixed matching cameras, 3024 × 1964 captures. HotelFareza is framed around the building façade. Click a render to inspect the original. Gaussian Splat Lite WebGPU uses the viewer’s sRGB working space, matching WebGL’s sRGB blending. Native SH decoding and projection remain unchanged. Raw stochastic captures use no spatial resolve or temporal accumulation.</p>
-<div class="gallery" id="gallery"></div><div id="qualityTable" class="table-wrap"></div>
-<p data-i18n="qualityNote" class="note">MAE (RGB 0–255) and PSNR compare each backend with its own normal-sorting capture. They quantify image change, not subjective image quality or a ranking between renderers.</p>
-</section>
-<section><h2 data-i18n="boundsTitle">Measurement scope</h2><div class="qa-grid">
-<p><strong data-i18n="inputTitle">Full inputs, fixed resolution</strong><span data-i18n="inputTitleBody">Elevator: 2,796,503 splats; HotelFareza: 12,202,010; WillaGlobalPoland: 14,469,103. Full PLY/SH3 inputs, fixed cameras, 3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.</span></p>
-<p><strong data-i18n="sparkTitle">Spark source precision</strong><span data-i18n="sparkTitleBody">Both source and accumulator use extended encoding. Base records are 32 bytes with float32 positions; “extended” does not mean every field is float32. SH3 is retained. The 32-byte source record and the 32-bit sort key describe different things.</span></p>
-<p><strong data-i18n="gslSourceTitle">Gaussian Splat Lite source and accumulator</strong><span data-i18n="gslSourceBody">GSL uses its published source and accumulator encodings with full input SH. Effective rendering settings and the exact dependency versions are recorded per run.</span></p>
-<p><strong data-i18n="gslProcessingTitle">Three.js versions</strong><span data-i18n="gslProcessingBody">GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 because its WebGPU path is incompatible with r187. Native sorting and caching remain enabled.</span></p>
-<p><strong data-i18n="ssTitle">PlayCanvas Engine and rendering settings</strong><span data-i18n="ssTitleBody">Engine and Viewer use large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255, antiAlias false, colorUpdateAngle 0 and radial sorting. Spark and Radix use minimum radius 2 and maximum 512. GSL uses minimum radius 1 and exposes no maximum-radius setting. Native coverage and projection can still differ.</span></p>
-<p><strong data-i18n="editorTitle">SuperSplat Viewer</strong><span data-i18n="editorBody">Viewer is created through its public API with the pinned Engine peer. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling are off. Its model rotation is reset to match the original PLY. Its own update loop remains active while automatic draws are suppressed.</span></p>
-<p><strong data-i18n="cacheTitle">Caching and motion</strong><span data-i18n="cacheTitleBody">Static tests still draw every frame and retain internal projection caches. Moving tests use matching ±45° sinusoidal camera sequences; asynchronous backends may draw with a previous ordering. Frame time therefore does not include waiting for the newest sort. Motion advances per frame, so results do not claim equal-time interactive FPS.</span></p>
+          <p>
+            <strong data-i18n="supportTitle">Supported features</strong>
+            <span data-i18n="supportTitleBody">
+              All eight backends run sorted rendering; PlayCanvas WebGPU and both GSL backends also run raw stochastic.
+              Main and closer views are tested static and moving.
+            </span>
+          </p>
+        </div>
+        <details>
+          <summary data-i18n="sourcesTitle">Versions, data and sources</summary>
+          <div id="provenance"></div>
+          <p class="note">
+            <a href="https://github.com/playcanvas/supersplat-viewer/tree/v1.42.0">SuperSplat Viewer source</a>
+            ·
+            <a href="https://sparkjs.dev/docs/spark-renderer/">Spark renderer</a>
+            ·
+            <a href="https://sparkjs.dev/docs/ext-splats/">ExtSplats</a>
+            ·
+            <a href="https://github.com/playcanvas/engine/tree/876ba2e7dffc246b1008695f23f60ac1a9b96109">
+              PlayCanvas source
+            </a>
+            ·
+            <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/releases/tag/v1.6.2">
+              Gaussian Splat Lite v1.6.2
+            </a>
+            ·
+            <a href="https://claude.ai/code/artifact/b2f3c482-3d9d-481e-ab0a-0d97620c09a2">
+              <span data-i18n="reference">Layout / protocol reference</span>
+            </a>
+          </p>
+        </details>
+        <div class="downloads">
+          <a data-i18n="downloadJson" href="benchmark-data.json" download>Download summary JSON</a>
+          <a data-i18n="downloadCsv" href="benchmark-summary.csv" download>Download table CSV</a>
+          <a data-i18n="downloadKit" href="harness/README.md">Reproduction instructions</a>
+        </div>
+      </section>
+      <footer id="footer"></footer>
+    </main>
+    <div class="full-image" id="lightbox">
+      <button data-i18n="closeButton" type="button" id="close">Close ×</button>
+      <img id="fullImage" alt="Original renderer capture" />
+    </div>
 
-<p><strong data-i18n="supportTitle">Supported features</strong><span data-i18n="supportTitleBody">Eight backends measure sorted rendering. PlayCanvas WebGPU and both GSL backends also measure raw stochastic rendering. Static and moving main/closer views use separate comparisons. No spatial resolve or temporal accumulation.</span></p>
-</div><details><summary data-i18n="sourcesTitle">Versions, data and sources</summary><div id="provenance"></div><p class="note"><a href="https://github.com/playcanvas/supersplat-viewer/tree/v1.42.0">SuperSplat Viewer source</a> · <a href="https://sparkjs.dev/docs/spark-renderer/">Spark renderer</a> · <a href="https://sparkjs.dev/docs/ext-splats/">ExtSplats</a> · <a href="https://github.com/playcanvas/engine/tree/876ba2e7dffc246b1008695f23f60ac1a9b96109">PlayCanvas source</a> · <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/releases/tag/v1.6.2">Gaussian Splat Lite v1.6.2</a> · <a href="https://claude.ai/code/artifact/b2f3c482-3d9d-481e-ab0a-0d97620c09a2"><span data-i18n="reference">Layout / protocol reference</span></a></p></details>
-<div class="downloads"><a data-i18n="downloadJson" href="benchmark-data.json" download>Download summary JSON</a><a data-i18n="downloadCsv" href="benchmark-summary.csv" download>Download table CSV</a><a data-i18n="downloadKit" href="harness/README.md">Reproduction instructions</a></div></section><footer id="footer"></footer>
-</main><div class="full-image" id="lightbox"><button data-i18n="closeButton" type="button" id="close">Close ×</button><img id="fullImage" alt="Original renderer capture"></div>
-
-<script>
-const DATA=__BENCHMARK_DATA__;
-const I18N={"eyebrow":["Measured locally · Apple M5 Pro","本地实测 · Apple M5 Pro"],"lede":["Rendering, sorting and memory measured on the same original PLY files, cameras and full models at Retina resolution. Rendering settings are adjusted as closely as possible. Depth-sorted groups use radial ordering; stochastic groups retain native behavior without temporal accumulation.","同一份原始 PLY、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存。渲染设置尽量调整为一致。深度排序组统一按径向距离排序；随机渲染组保留原生行为，关闭时间累积。"],"pixels":["1512 × 982 CSS px · DPR 2 · No MSAA","1512 × 982 CSS px · DPR 2 · 无 MSAA"],"chip":["M5 Pro · 16 GPU cores","M5 Pro · 16 核 GPU"],"ram":["48 GiB unified memory · macOS 26.7","48 GiB 统一内存 · macOS 26.7"],"modelLabel":["Model","模型"],"hotel":["HotelFareza · 12.20M","HotelFareza · 1220 万"],"elevator":["Elevator · 2.80M","Elevator · 279 万"],"scenarioLabel":["Scene","场景"],"static":["Static · main view","静止 · 主视角"],"close":["Static · closer side view","静止 · 近景侧视角"],"moving":["Moving · main view","连续移动 · 主视角"],"metricLabel":["Metric","指标"],"completion50":["Frame Completion P50","Frame Completion P50"],"language":["Language","语言"],"currentScene":["Current scene","当前场景"],"lower":["ms · Lower is better","单位 ms · 越低越好"],"frameNote":["Frame Completion P50/P95 are the per-run median and 95th percentile, each aggregated as the median of three independent runs. Timing includes submission, GPU completion and timestamp-query readback, with one frame in flight. This is not the display refresh interval or isolated GPU execution. Per-frame GPU timestamps remain in the raw diagnostic data.","Frame Completion P50/P95 分别为每轮完成延迟的中位数和第 95 百分位，再各取三轮中位数。计时包含提交、GPU 完成和时间戳查询回读，同时只运行一帧；不是屏幕刷新间隔或纯 GPU 执行耗时。逐帧 GPU 时间戳保留在原始诊断数据中。"],"sortingTitle":["Where sorting runs","排序发生在哪里"],"sortingNote":["Worker sorting runs asynchronously; GPU sorting is ordered within the GPU command stream. Async completion includes preparation, transfers, sorting and handing back the result. A separate diagnostic measures the first-to-last radix pass span. Each run alternates between two camera directions, with 4 warm-up iterations and 16 measured samples.","Worker 排序异步执行；GPU 排序在 GPU 命令流内依次完成。异步完成延迟包含准备、传输、排序及结果交回。单独诊断测量 radix 首个 pass 开始到最后一个 pass 结束的跨度。每轮交替切换两个相机方位，预热 4 次后测量 16 次。"],"sortDiagnostic":["GSL separates projection and radix only for this diagnostic. Engine, Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one complete sort per sample: GPU key projection/readback plus Worker sorting and result delivery. Worker execution and message round trip are shown separately. Frame tests retain asynchronous sorting. Native pipelines and active counts differ; these are not equal-input sorting algorithms.","GSL 仅在排序诊断中拆分投影与 radix。Engine、Viewer 与 Radix GPU 使用原生 pass 边界。Radix CPU 每个诊断样本等待一次完整排序，包括 GPU 排序键生成／回读、Worker 排序和结果返回；Worker 执行与消息往返单独显示。帧测试仍保留异步排序。 各引擎的管线和有效输入数量不同，不能当作等输入排序算法对比。"],"precisionTitle":["Sorting precision, explained","排序精度与差异"],"precisionIntro":["All depth-sorted groups use radial ordering. Source encoding, key precision and sort latency are separate properties. Engines may encode distance or squared distance, so equal key widths do not guarantee equal quantization. Asynchronous results may lag behind the camera.","所有深度排序组统一使用径向距离顺序。源数据编码、键精度和排序延迟是三个不同属性。各引擎可能编码距离或距离平方，同样的键位数不代表相同的量化精度；异步结果仍可能落后于当前相机。"],"renderer":["Renderer","渲染器"],"keyEncoding":["Sort key","排序键"],"implementation":["Execution","执行方式"],"precisionEffect":["Precision and trade-off","精度与取舍"],"sparkKey":["32-bit float sort metric, all bits retained","32 位浮点排序度量，保留全部位"],"sparkExec":["GPU key readback → Worker/WASM; 2 × 16-bit radix digits","GPU 排序键回读 → Worker/WASM；2 轮 16 位 radix"],"sparkPrec":["No extra truncation of the float32 depth key. GPU readback and Worker transfers contribute to async completion latency.","不额外截断 float32 深度键。GPU 回读和 Worker 传输会计入异步完成延迟。"],"ssKey":["Log-spaced keys from float32 squared-distance bits. WebGL2: 16 bits; WebGPU: 16–20 bits, rounded to the radix width.","按 float32 距离平方位模式映射的近似对数间距键。WebGL2：16 位；WebGPU：16–20 位，向 radix 位宽取整。"],"ssExec":["WebGL2: JavaScript Worker counting sort. WebGPU: portable 4-bit radix on this Apple GPU.","WebGL2：JavaScript Worker 计数排序。WebGPU：本机 Apple GPU 使用可移植的 4 位 radix。"],"ssPrec":["Keys are rescaled over the current distance range; precision depends on the near clip and active scene bounds.","键值按当前距离范围重新映射；精度取决于 near clip 与有效场景边界。"],"gslDefault":["Gaussian Splat Lite · default","Gaussian Splat Lite · 默认"],"gslDefaultKey":["Upper 24 bits of the float32 key; lowest 8 bits removed","保留 float32 键的高 24 位，舍去低 8 位"],"gslDefaultExec":["WebGL2: Worker/WASM, one counting pass over 23 effective bits (sign bit fixed). WebGPU: 3 × 8-bit radix digits.","WebGL2：Worker/WASM，1 轮计数排序，23 个有效位（符号位固定）。WebGPU：3 轮 8 位 radix。"],"gslDefaultPrec":["15 fraction bits remain. GSL 1.6.2 uses camera distance for radial sorting on both backends. WebGL2 uses a 32 MiB count table.","保留 15 位尾数。GSL 1.6.2 的两个后端均以到相机的距离进行径向排序。WebGL2 计数表占用 32 MiB。"],"precisionNumbers":["PlayCanvas and Viewer map squared-distance float bits over a range starting at nearClip / 1024 and ending at the active scene bound. CPU radial sorting uses 16-bit counting keys; GPU sorting chooses 16–20 bits from the active count and rounds to the radix width. This Apple GPU uses portable 4-bit radix. Equal key widths do not establish image equivalence.","PlayCanvas 与 Viewer 将距离平方的浮点位模式映射到从 nearClip / 1024 到有效场景边界的距离范围。CPU 径向排序采用 16 位计数键；GPU 按有效数量选择 16–20 位，再向 radix 位宽取整。本机 Apple GPU 使用可移植的 4 位 radix。同样的键位数不代表相同图像精度。"],"precisionLimit":["Nearly coincident splats can share a quantized key and change alpha blending. Sorting uses Gaussian center distance and does not provide per-pixel ordering for intersecting Gaussians. Ordinary depth-sorted GSL cases use its default 24-bit sorting. Spark uses extended source and accumulator encoding in timing and image tests. Raw stochastic GSL frames instead use the default 16-bit axial front-to-back ordering; PlayCanvas stochastic rendering skips sorting.","相近深度的 splat 可能落入同一量化桶，影响 alpha 混合。排序依据高斯中心距离，并非相交高斯的逐像素排序。GSL 的普通深度排序组使用默认 24 位排序。Spark 在性能及图像测试中均使用 extended 源数据和累加器。 GSL 原始随机渲染帧则使用默认的 16 位轴向从前到后排序；PlayCanvas 随机渲染不排序。"],"memoryTitle":["Memory","内存"],"memoryMethod":["Sum JS heap, ArrayBuffer/external backing storage and WASM capacity within each post-GC snapshot, including the main thread and live Workers. Take the maximum across sorted cases per run, then the median across three runs. GPU allocation is aggregated separately. Stochastic render targets are excluded. MiB = 2²⁰ bytes.","每个垃圾回收后快照内，合计主线程和存活 Worker 的 JS heap、ArrayBuffer/外部存储及 WASM 容量；再取每轮排序组的最大值，最后取三轮中位数。GPU 分配独立统计。随机透明附加目标不计入。MiB = 2²⁰ 字节。"],"heapChartTitle":["JS heap + ArrayBuffer + WASM · MiB","JS heap + ArrayBuffer + WASM · MiB"],"gpuChartTitle":["Explicit GPU allocation · MiB","显式 GPU 分配 · MiB"],"heapMeaning":["The combined value is the sum of the recorded memory categories. ArrayBuffer includes CDP external-string backing storage; WASM uses live Worker linear-memory capacity. It is an accounting sum, not process RSS or deduplicated physical memory. Raw component measurements remain in harness/results.","合计值为现有内存统计项之和：ArrayBuffer 包含 CDP 统计的外部字符串存储，WASM 使用存活 Worker 的线性内存容量。这是统计项合计，并非进程 RSS 或去重后的物理内存。分项原始数据保留在 harness/results。"],"gpuMeaning":["Explicit GPU allocation tracks buffer, texture and renderbuffer capacity, excluding measurement-query buffers, driver overhead, alignment and the swapchain. It is allocated resource capacity, not physical VRAM usage; Apple uses unified memory. Browser process-tree RSS includes unrelated browser/GPU-process memory and can double-count shared pages, so it is retained only as raw diagnostics, not used for the memory comparison.","显式 GPU 分配统计 buffer、texture 和 renderbuffer 容量，扣除测量查询缓冲，不含驱动、对齐开销和交换链；这是资源容量，不是物理显存实测，Apple 使用统一内存。浏览器进程树 RSS 包含浏览器与 GPU 进程的其他内存，还可能重复计入共享页，因此仅保留为原始诊断，不用于内存对比。"],"imagesTitle":["Image comparison","图像对照"],"displayMode":["Display","显示方式"],"sortedImage":["Normal sorting","正常排序"],"stochImage":["Stochastic · raw","随机透明 · 原始采样"],"imageNote":["Fixed matching cameras, 3024 × 1964 captures. HotelFareza is framed around the building façade. Click a render to inspect the original. Gaussian Splat Lite WebGPU uses the viewer’s sRGB working space, matching WebGL’s sRGB blending. Native SH decoding and projection remain unchanged. Raw stochastic captures use no spatial resolve or temporal accumulation.","统一固定相机，3024 × 1964 截图。HotelFareza 以建筑立面为主体。点击查看原图。Gaussian Splat Lite WebGPU 使用 viewer 的 sRGB 工作空间，与 WebGL 的 sRGB 混合对齐；保留原生 SH 解码和投影。原始随机渲染不使用空间 resolve 或时间累积。"],"qualityNote":["MAE (RGB 0–255) and PSNR compare each backend with its own normal-sorting capture. They quantify image change, not subjective image quality or a ranking between renderers.","MAE（RGB 0–255）与 PSNR 以每个后端自己的正常排序截图为参照，只量化图像变化，不代表主观画质或跨渲染器排名。"],"boundsTitle":["Measurement scope","测量边界"],"inputTitle":["Full inputs, fixed resolution","完整输入与固定画幅"],"inputTitleBody":["Elevator: 2,796,503 splats; HotelFareza: 12,202,010; WillaGlobalPoland: 14,469,103. Full PLY/SH3 inputs, fixed cameras, 3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.","Elevator：2,796,503；HotelFareza：12,202,010；WillaGlobalPoland：14,469,103 个 splat。完整 PLY/SH3、固定相机、3024 × 1964 物理像素，垂直 FOV 45°、near 0.1、far 3000、背景 #101418。"],"sparkTitle":["Spark source precision","Spark 源数据精度"],"sparkTitleBody":["Both source and accumulator use extended encoding. Base records are 32 bytes with float32 positions; “extended” does not mean every field is float32. SH3 is retained. The 32-byte source record and the 32-bit sort key describe different things.","源数据和累加器均使用 extended 编码。基础记录 32 字节，位置为 float32；extended 不意味着所有字段均为 float32。保留 SH3。32 字节源记录和 32 位排序键是不同概念。"],"ssTitle":["PlayCanvas Engine and rendering settings","PlayCanvas Engine 与渲染设置"],"ssTitleBody":["Engine and Viewer use large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255, antiAlias false, colorUpdateAngle 0 and radial sorting. Spark and Radix use minimum radius 2 and maximum 512. GSL uses minimum radius 1 and exposes no maximum-radius setting. Native coverage and projection can still differ.","Engine 和 Viewer 使用 large 工作缓冲、minPixelSize 2、minContribution 0、alphaClipForward 1/255、antiAlias false、colorUpdateAngle 0 与径向排序。Spark 和 Radix 最小半径 2、最大 512。GSL 最小半径 1，不提供最大半径设置。原生覆盖范围与投影仍可能不同。"],"cacheTitle":["Caching and motion","缓存与移动"],"cacheTitleBody":["Static tests still draw every frame and retain internal projection caches. Moving tests use matching ±45° sinusoidal camera sequences; asynchronous backends may draw with a previous ordering. Frame time therefore does not include waiting for the newest sort. Motion advances per frame, so results do not claim equal-time interactive FPS.","静止测试仍绘制每一帧，保留内部投影缓存。移动测试使用相同的 ±45° 正弦相机序列；异步后端可使用上一排序结果绘制，因此帧时间不包含等待最新排序的全部延迟。轨迹按帧推进，不能用于声称相同真实时间的交互 FPS。"],"supportTitle":["Supported features","可用功能"],"supportTitleBody":["Eight backends measure sorted rendering. PlayCanvas WebGPU and both GSL backends also measure raw stochastic rendering. Static and moving main/closer views use separate comparisons. No spatial resolve or temporal accumulation.","八个后端测试深度排序。PlayCanvas WebGPU 与两个 GSL 后端还测试原始随机渲染。主视角与近侧视角分别测试静止和移动，不使用空间 resolve 或时间累积。"],"sourcesTitle":["Versions, data and sources","版本、数据与来源"],"reference":["Layout / protocol reference","版式 / 协议参考"],"downloadJson":["Download summary JSON","下载汇总 JSON"],"downloadCsv":["Download table CSV","下载数值表 CSV"],"downloadKit":["Reproduction instructions","复现说明"],"closeButton":["Close ×","关闭 ×"],"default":["default","默认"],"runs":["runs","轮"],"frames":["frames","帧"],"noData":["No data for this mode.","该模式无可用数据。"],"perRun":["Selected metric per run","所选指标各轮数值"],"sceneStoch":["Native raw sampling, without spatial resolve or temporal accumulation. GSL 1.6.2 retains its default 16-bit front-to-back stochastic sorting; PlayCanvas skips depth sorting. Native sampling patterns differ.","使用原生随机采样，不启用空间 resolve 或时间累积。GSL 1.6.2 保留默认的 16 位从前到后随机渲染排序；PlayCanvas 跳过深度排序。各引擎的采样模式不同。"],"sceneMoving":["Continuous ±45° camera motion, matching the lab amplitude. WebGL2 overlaps Worker sorting with drawing; WebGPU sorts within the current GPU command stream.","相机以与 lab 相同的 ±45° 幅度持续移动。WebGL2 允许 Worker 排序与绘制重叠；WebGPU 在当前 GPU 命令流中完成排序。"],"sceneStatic":["Fixed camera, full model. Internal caches are retained; drawing continues while stationary.","固定相机，完整模型。保留内部缓存，静止时持续绘制。"],"independentRuns":["independent runs","轮独立运行"],"repeatNote":["Individual run values are shown to expose measurement variation.","显示各轮数值，可检查重复测量的波动。"],"location":["Execution","执行位置"],"worker":["Worker execution","Worker 执行"],"rpc":["Worker round trip","Worker 往返"],"async":["Async completion","异步完成延迟"],"radix":["GPU radix span","GPU radix 跨度"],"gpuSync":["GPU synchronous","GPU 同步"],"heap":["JS heap + ArrayBuffer + WASM","JS heap + ArrayBuffer + WASM"],"allocation":["GPU allocation","GPU 分配"],"unsupported":["Not measured in this protocol.","本协议未测量此模式。"],"original":["Original ↗","原图 ↗"],"imageDelta":["Same-backend image difference","同后端图像偏差"],"rawNote":["Full per-frame data are in harness/results. Exact source versions and camera settings are recorded in each run.","完整逐帧数据位于 harness/results，每轮保存精确版本与相机参数。"],"gpuTimestamps":["GPU timestamps","GPU 时间戳"],"measuredLocally":["Measured locally","本地实测"],"groups":["measurement groups","组测量"],"privacy":["Model files are not included or uploaded.","未包含模型文件，也未上传云端。"],"best":["Best","最佳"],"winnerLegend":["Green highlights mark the lowest displayed value within each group: depth-sorted and raw stochastic rendering are ranked separately. Ties are shared.","绿色高亮分别标记深度排序组和原始随机渲染组中的最低显示值，两组各自比较，并列时共同标记。"],"gslSourceTitle":["Gaussian Splat Lite source and accumulator","Gaussian Splat Lite 源数据与累加器"],"gslSourceBody":["GSL uses its published source and accumulator encodings with full input SH. Effective rendering settings and the exact dependency versions are recorded per run.","GSL 使用发布版本的源数据与累加器编码，保留输入 SH。每轮记录实际显示参数和精确依赖版本。"],"gslProcessingTitle":["Three.js versions","Three.js 版本"],"gslProcessingBody":["GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 because its WebGPU path is incompatible with r187. Native sorting and caching remain enabled.","GSL 和 Spark 使用 Three.js r187；Radix 0.0.1 的 WebGPU 与 r187 不兼容，因此使用 r186。原生排序和缓存保持启用。"],"completion95":["Frame Completion P95","Frame Completion P95"],"editorTitle":["SuperSplat Viewer","SuperSplat Viewer"],"editorBody":["Viewer is created through its public API with the pinned Engine peer. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling are off. Its model rotation is reset to match the original PLY. Its own update loop remains active while automatic draws are suppressed.","通过公开 API 创建 Viewer，使用同一固定版本的 Engine。深度排序、large 工作缓冲、统一相机和分辨率，关闭后期效果和性能分辨率缩放。重置模型旋转以匹配原始 PLY。保留 Viewer 更新循环，抑制自动绘制。"],"closeMoving":["Moving · closer side view","移动 · 近侧视角"],"sortedGroup":["Depth-sorted rendering","深度排序渲染"],"rawGroup":["Raw stochastic rendering","原始随机渲染"],"testDate":["Tested","测试日期"],"generated":["Report generated","报告生成时间"],"stochDesc":["Raw stochastic uses native sampling without spatial resolve or temporal accumulation. GSL retains front-to-back stochastic sorting; PlayCanvas skips sorting.","原始随机渲染使用原生采样，不启用空间 resolve 或时间累积。GSL 保留从前到后排序，PlayCanvas 跳过排序。"],"executionOrder":["Execution order by round","各轮执行顺序"],"round":["Round","轮次"],"sortSupplement":["Radix sorting was refreshed in separate fresh-browser runs with three interleaved rounds, four warm-up iterations and 16 samples per run. Original frame and memory results are retained. Each raw sort record includes its measurement timestamp.","Radix 排序已单独补测：每次启动新浏览器，三轮交错执行，每轮预热 4 次、采样 16 次。原帧性能和内存结果保留，每条原始排序记录包含补测时间。"],"radixKey":["Default 24-bit radial-distance key; lowest 7 float32 bits removed","默认 24 位径向距离键；舍去 float32 的低 7 位"],"radixExec":["WebGL2: GPU key readback → JavaScript Worker, 11 + 13-bit radix digits. WebGPU: 3 × 8-bit radix digits.","WebGL2：GPU 排序键回读 → JavaScript Worker，11 + 13 位 radix。WebGPU：3 轮 8 位 radix。"],"radixPrec":["16 fraction bits remain, versus 15 in GSL’s default key. GSL 1.6.2 and Radix both encode camera distance. GPU readback and Worker transfers contribute to WebGL2 async completion latency.","保留 16 位尾数，GSL 默认键保留 15 位。GSL 1.6.2 与 Radix 均编码到相机的距离。GPU 回读和 Worker 传输会计入 WebGL2 异步完成延迟。"],"viewerKey":["Engine WebGPU log-spaced squared-distance keys","Engine WebGPU 近似对数间距的距离平方键"],"viewerExec":["WebGPU: Engine portable 4-bit radix on this Apple GPU.","WebGPU：本机 Apple GPU 使用 Engine 可移植的 4 位 radix。"],"viewerPrec":["Uses the same Engine WebGPU key mapping and precision selection as PlayCanvas WebGPU. GPU timing follows native pass boundaries.","使用与 PlayCanvas WebGPU 相同的 Engine 键映射和精度选择；GPU 耗时按原生 pass 边界测量。"]};
-const names={spark:'Spark · WebGL2','pc-gl':'PlayCanvas · WebGL2','pc-gpu':'PlayCanvas · WebGPU','viewer-gpu':'SuperSplat Viewer · WebGPU','radix-gpu':'Radix · WebGPU','radix-gl':'Radix · WebGL2','gsl-gl':'Gaussian Splat Lite · WebGL2','gsl-gpu':'Gaussian Splat Lite · WebGPU'};
-const colors={spark:'#a75e2d','pc-gl':'#287c62','pc-gpu':'#558c29','viewer-gpu':'#b24b72','radix-gpu':'#b59527','radix-gl':'#6b8b9d','gsl-gl':'#3976ae','gsl-gpu':'#7454a1'};
-const modes=['spark','radix-gpu','radix-gl','gsl-gpu','gsl-gl','viewer-gpu','pc-gpu','pc-gl'];
-const $=id=>document.getElementById(id);
-const tr=key=>I18N[key]?.[$('language').value==='zh'?1:0]??key;
-const fmt=(n,d=2)=>Number.isFinite(n)?n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
-const dot=m=>`<span class="dot" style="background:${colors[m]}"></span>`;
-const median=a=>{a=a.filter(Number.isFinite).sort((a,b)=>a-b);return a.length?a[Math.floor(a.length/2)]:null;};
-function current(){return {model:$('model').value,scenario:$('scenario').value,metric:$('metric').value};}
-function rowsFor(s,variant){return DATA.cases.filter(c=>c.model===s.model&&c.scenario===s.scenario&&c.variant===variant);}
-function series(rows,key){
- const map=new Map();
- for(const row of rows){const id=row.mode+'-'+row.precision;if(!map.has(id))map.set(id,{mode:row.mode,precision:row.precision,values:[],rows:[]});map.get(id).values.push(row[key]);map.get(id).rows.push(row);}
- return [...map.values()].map(s=>({...s,value:median(s.values)})).sort((a,b)=>modes.indexOf(a.mode)-modes.indexOf(b.mode)||a.precision.localeCompare(b.precision));
-}
-const title=s=>names[s.mode];
-const isBest=(value,values,d=2)=>Number.isFinite(value)&&Number(value.toFixed(d))===Math.min(...values.filter(Number.isFinite).map(v=>Number(v.toFixed(d))));
-function metricValue(value,values,unit='ms',digits=2){
- if(!Number.isFinite(value))return '—';
- const label=fmt(value,digits)+(unit?' '+unit:'');
- return isBest(value,values,digits)?`<span class="winner" title="${tr('best')}">${label}</span>`:label;
-}
-function metricCell(item,items,key,unit='ms',digits=2){return metricValue(median(item.rows.map(r=>r[key])),items.map(s=>median(s.rows.map(r=>r[key]))),unit,digits);}
-function bars(id,items,unit,max=Math.max(1,...items.map(s=>s.value||0))){
- const values=items.map(s=>s.value),digits=unit==='MiB'?1:2;
- $(id).innerHTML=items.map(s=>`<div class="barrow" data-best="${isBest(s.value,values,digits)}"><div class="barlabel">${dot(s.mode)}${title(s)}<small>${s.rows.length} ${tr('runs')}${unit==='ms'?' · '+s.rows.reduce((n,r)=>n+(r.n||0),0)+' '+tr('frames'):''}${isBest(s.value,values,digits)?'<span class="badge">'+tr('best')+'</span>':''}</small></div><div class="track"><div class="bar" style="width:${100*s.value/max}%;background-color:${colors[s.mode]}"></div></div><div class="barvalue">${fmt(s.value,digits)} <span class="small">${unit}</span></div></div>`).join('')||'<p>'+tr('noData')+'</p>';
-}
-function table(id,headers,rows){$(id).innerHTML='<table><thead><tr>'+headers.map(h=>'<th>'+tr(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(cell=>'<td>'+cell+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
-function render(){
- const s=current(),key={completion:'completionP50',completion95:'completionP95'}[s.metric];
- const groups=[{variant:'sorted',label:'sortedGroup',chart:'mainChart',table:'mainTable'},{variant:'stochastic',label:'rawGroup',chart:'rawChart',table:'rawTable'}].map(group=>({...group,rows:rowsFor(s,group.variant),items:series(rowsFor(s,group.variant),key)}));
- const max=Math.max(1,...groups.flatMap(g=>g.items.map(item=>item.value||0)));
- for(const group of groups){
-  bars(group.chart,group.items,'ms',max);
-  table(group.table,['renderer','completion50','completion95','perRun'],group.items.map(item=>[dot(item.mode)+title(item),...['completionP50','completionP95'].map(k=>metricCell(item,group.items,k)),item.rows.map(r=>metricValue(r[key],group.rows.filter(c=>c.round===r.round).map(c=>c[key]),'')).join(' / ')]));
- }
- $('sceneNote').textContent=tr(s.scenario.includes('moving')?'sceneMoving':'sceneStatic');
- $('findings').innerHTML=groups.map(group=>{
-  const values=group.items.map(item=>item.value),best=group.items.filter(item=>isBest(item.value,values));
-  return best.length?`<div><b>${fmt(best[0].value)} ms</b><p>${tr(group.label)} · ${tr('best')}<br>${best.map(title).join(' / ')}</p></div>`:'';
- }).join('')+`<div><b>${DATA.rounds} ${tr('independentRuns')}</b><p>${tr('repeatNote')}</p></div>`;
- const sorts=DATA.sort.filter(c=>c.model===s.model);
- const sortItems=series(sorts,'gpuSortP50');
- $('sortSupplement').hidden=!sorts.some(row=>row.diagnosticProtocol==='radix-sort-diagnostic-v1');
- $('sortSupplement').textContent=tr('sortSupplement');
- table('sortTable',['renderer','location','worker','rpc','async','radix'],sortItems.map(item=>[dot(item.mode)+title(item),(item.mode==='pc-gl'||item.mode==='radix-gl')?'Worker / JavaScript':item.mode==='spark'||item.mode==='gsl-gl'?'Worker / WASM':tr('gpuSync'),...['workerP50','rpcP50','asyncP50','gpuSortP50'].map(k=>metricCell(item,sortItems,k))]));
- const mem=DATA.memory.filter(c=>c.model===s.model);
- bars('heapMemory',series(mem,'cpuMemoryMiB'),'MiB');bars('gpuMemory',series(mem,'gpuMiB'),'MiB');
- const memoryItems=series(mem,'cpuMemoryMiB');
- table('memoryTable',['renderer','heap','allocation'],memoryItems.map(item=>[dot(item.mode)+title(item),...['cpuMemoryMiB','gpuMiB'].map(k=>metricCell(item,memoryItems,k,'MiB',1))]));
- renderGallery();
- const orders=[...new Map(DATA.runs.filter(run=>run.model===s.model).map(run=>[run.round,run.order])).entries()].sort((a,b)=>a[0]-b[0]);
- $('provenance').innerHTML=`<p class="note">Spark ${DATA.versions.spark} · Gaussian Splat Lite ${DATA.versions.gsl} · three.js ${DATA.versions.three} · PlayCanvas ${DATA.versions.playcanvas} · Viewer ${DATA.versions.viewer} · Radix ${DATA.versions.radix} (Three.js ${DATA.versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round,order])=>tr('round')+' '+round+': '+order.map(mode=>names[mode]).join(' → ')).join('<br>')}</p>`;
- $('modelCount').textContent=(DATA.models[s.model].count/1e6).toFixed(2)+'M';
- $('modelName').textContent=DATA.models[s.model].name+' · SH3';
- $('roundLabel').textContent=DATA.rounds+' '+tr('independentRuns')+' · '+'Frame Completion P50 / P95';
- const dateFormat=new Intl.DateTimeFormat($('language').value==='zh'?'zh-CN':'en-GB',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'});
- const dates=[DATA.testDates[0],DATA.testDates.at(-1)].filter((date,i,all)=>i===0||date!==all[0]).map(date=>dateFormat.format(new Date(date+'T12:00:00Z'))).join(' – ');
- $('testDate').textContent=tr('testDate')+' · '+dates+' · '+DATA.testTimeZone;
- $('footer').textContent=tr('generated')+' · '+DATA.generated+' · '+DATA.cases.length+' '+tr('groups')+' · '+tr('privacy');
-}
-function renderGallery(){
- const model=$('model').value,variant=$('imageVariant').value;
- $('gallery').innerHTML=modes.map(mode=>{
-  const img=DATA.images.find(i=>i.model===model&&i.mode===mode&&i.variant===variant);
-  return `<figure>${img?`<img src="${img.thumb}" data-full="${img.path}" alt="${names[mode]} ${variant}" loading="lazy">`:'<div class="empty">'+tr('unsupported')+'</div>'}<figcaption><span>${dot(mode)}${names[mode]}</span>${img?`<a href="${img.path}" target="_blank">${tr('original')}</a>`:''}</figcaption></figure>`;
- }).join('');
- const q=DATA.quality.filter(q=>q.model===model&&q.variant===variant).sort((a,b)=>modes.indexOf(a.mode)-modes.indexOf(b.mode));
- table('qualityTable',['imageDelta','MAE (0–255)','PSNR'],q.map(q=>[names[q.mode],fmt(q.mae,3),(q.mae===0?'∞':fmt(q.psnr,2))+' dB']));
- $('gallery').querySelectorAll('[data-full]').forEach(img=>img.onclick=()=>{$('fullImage').src=img.dataset.full;$('lightbox').classList.add('open');});
-}
-function setLanguage(){
- document.documentElement.lang=$('language').value==='zh'?'zh-CN':'en';
- document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));
- document.querySelector('nav').setAttribute('aria-label',$('language').value==='zh'?'报告筛选':'Report filters');
- $('fullImage').alt=$('language').value==='zh'?'原始渲染截图':'Original renderer capture';
- render();
-}
-for(const id of ['model','scenario','metric'])$(id).addEventListener('change',render);
-$('language').onchange=setLanguage;$('imageVariant').onchange=renderGallery;
-$('close').onclick=()=>$('lightbox').classList.remove('open');
-$('lightbox').onclick=e=>{if(e.target.id==='lightbox')$('close').click();};
-addEventListener('keydown',e=>{if(e.key==='Escape')$('close').click();});
-$('model').replaceChildren(...Object.entries(DATA.models).map(([id,model])=>new Option(model.name,id)));
-$('model').value=DATA.models.hotel?'hotel':Object.keys(DATA.models)[0];
-$('browser').textContent='Chrome '+DATA.browser.split('.')[0];
-setLanguage();
-</script></body></html>
+    <script type="application/json" id="benchmark-data">
+      __BENCHMARK_DATA__
+    </script>
+    <script>
+      const DATA = JSON.parse(document.getElementById('benchmark-data').textContent);
+      const I18N = {
+        eyebrow: ['Measured locally · Apple M5 Pro', '本地实测 · Apple M5 Pro'],
+        lede: [
+          'Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with settings aligned as closely as possible. Sorted groups use radial ordering; stochastic groups keep native behavior without temporal accumulation.',
+          '同一 PLY、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存，设置尽量对齐。深度排序组按径向距离排序；随机渲染组保留原生行为，不做时间累积。',
+        ],
+        pixels: ['1512 × 982 CSS px · DPR 2 · No MSAA', '1512 × 982 CSS px · DPR 2 · 无 MSAA'],
+        chip: ['M5 Pro · 16 GPU cores', 'M5 Pro · 16 核 GPU'],
+        ram: ['48 GiB unified memory · macOS 26.7', '48 GiB 统一内存 · macOS 26.7'],
+        modelLabel: ['Model', '模型'],
+        hotel: ['HotelFareza · 12.20M', 'HotelFareza · 1220 万'],
+        elevator: ['Elevator · 2.80M', 'Elevator · 279 万'],
+        scenarioLabel: ['Scene', '场景'],
+        static: ['Static · main view', '静止 · 主视角'],
+        close: ['Static · closer side view', '静止 · 近景侧视角'],
+        moving: ['Moving · main view', '连续移动 · 主视角'],
+        metricLabel: ['Metric', '指标'],
+        language: ['Language', '语言'],
+        currentScene: ['Current scene', '当前场景'],
+        lower: ['ms · Lower is better', '单位 ms · 越低越好'],
+        frameNote: [
+          'One GPU frame in flight: each frame is submitted only after the previous one has finished on the GPU (WebGL2 fence / WebGPU onSubmittedWorkDone). Without this wait the CPU runs ahead, intervals look short and the queued work later shows up as stalls. Each sample is the interval between submissions; FPS = frames / sampled time. Values are medians across runs.',
+          '一帧在途：上一帧在 GPU 上完成后才提交下一帧（WebGL2 fence / WebGPU onSubmittedWorkDone）。若不等待，CPU 会跑在 GPU 前面，间隔看似很短，排队的工作随后表现为卡顿。每个样本是相邻两次提交的间隔；FPS = 帧数 / 采样时间。数值取各轮中位数。',
+        ],
+        sortingTitle: ['Where sorting runs', '排序发生在哪里'],
+        sortingNote: [
+          'Worker sorts run asynchronously; GPU sorts run in the GPU command stream. Async completion covers preparation, transfer, sorting and hand-back. Each run alternates two camera directions: 4 warm-up iterations, 16 samples.',
+          'Worker 排序异步执行，GPU 排序在 GPU 命令流内执行。异步完成延迟包含准备、传输、排序与交回。每轮交替两个相机方向，预热 4 次、采样 16 次。',
+        ],
+        sortDiagnostic: [
+          'The radix diagnostic measures the first-to-last pass span. GSL splits projection and radix only here; Engine, Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full sort per sample (GPU key readback + Worker sort). Pipelines and active counts differ, so these are not equal-input algorithm comparisons.',
+          'Radix 诊断测量首个到最后一个 pass 的跨度。GSL 仅在此拆分投影与 radix；Engine、Viewer 与 Radix GPU 使用原生 pass 边界。Radix CPU 每个样本等待一次完整排序（GPU 键回读 + Worker 排序）。各引擎管线与有效数量不同，不是等输入的算法对比。',
+        ],
+        precisionTitle: ['Sorting precision, explained', '排序精度与差异'],
+        precisionIntro: [
+          'All sorted groups use radial ordering. Engines encode distance or squared distance, so equal key widths do not mean equal quantization; async results may lag the camera.',
+          '所有深度排序组按径向距离排序。各引擎编码距离或距离平方，键位数相同不代表量化相同；异步结果可能滞后于相机。',
+        ],
+        renderer: ['Renderer', '渲染器'],
+        keyEncoding: ['Sort key', '排序键'],
+        implementation: ['Execution', '执行方式'],
+        precisionEffect: ['Precision and trade-off', '精度与取舍'],
+        sparkKey: ['32-bit float sort metric, all bits retained', '32 位浮点排序度量，保留全部位'],
+        sparkExec: [
+          'GPU key readback → Worker/WASM; 2 × 16-bit radix digits',
+          'GPU 排序键回读 → Worker/WASM；2 轮 16 位 radix',
+        ],
+        sparkPrec: [
+          'float32 depth key, no extra truncation. GPU readback and Worker transfers add async latency.',
+          'float32 深度键，不额外截断。GPU 回读与 Worker 传输增加异步延迟。',
+        ],
+        ssKey: [
+          'Log-spaced keys from float32 squared-distance bits. WebGL2: 16 bits; WebGPU: 16–20 bits, rounded to the radix width.',
+          '按 float32 距离平方位模式映射的近似对数间距键。WebGL2：16 位；WebGPU：16–20 位，向 radix 位宽取整。',
+        ],
+        ssExec: [
+          'WebGL2: JavaScript Worker counting sort. WebGPU: portable 4-bit radix on this Apple GPU.',
+          'WebGL2：JavaScript Worker 计数排序。WebGPU：本机 Apple GPU 使用可移植的 4 位 radix。',
+        ],
+        ssPrec: [
+          'Keys are rescaled over the current distance range; precision depends on the near clip and active scene bounds.',
+          '键值按当前距离范围重新映射；精度取决于 near clip 与有效场景边界。',
+        ],
+        gslDefault: ['Gaussian Splat Lite · default', 'Gaussian Splat Lite · 默认'],
+        gslDefaultKey: [
+          'Upper 24 bits of the float32 key; lowest 8 bits removed',
+          '保留 float32 键的高 24 位，舍去低 8 位',
+        ],
+        gslDefaultExec: [
+          'WebGL2: Worker/WASM, one counting pass over 23 effective bits (sign bit fixed). WebGPU: 3 × 8-bit radix digits.',
+          'WebGL2：Worker/WASM，1 轮计数排序，23 个有效位（符号位固定）。WebGPU：3 轮 8 位 radix。',
+        ],
+        gslDefaultPrec: [
+          '15 fraction bits; camera distance on both backends. WebGL2 uses a 32 MiB count table.',
+          '保留 15 位尾数；两个后端均按相机距离排序。WebGL2 计数表 32 MiB。',
+        ],
+        precisionNumbers: [
+          'PlayCanvas and Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU sorting uses 16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit radix on this Apple GPU).',
+          'PlayCanvas 与 Viewer 将距离平方位模式映射到 nearClip / 1024 至场景边界。CPU 排序用 16 位键；GPU 按有效数量选 16–20 位并向 radix 位宽取整（本机 Apple GPU 为 4 位 radix）。',
+        ],
+        precisionLimit: [
+          'Nearly coincident splats may share a key, changing alpha blending; sorting is by Gaussian center, not per pixel. Sorted GSL uses its default 24-bit sort; Spark uses extended encoding throughout. Raw stochastic GSL uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.',
+          '相近的 splat 可能共用一个键而影响 alpha 混合；排序按高斯中心，并非逐像素。GSL 深度排序组用默认 24 位排序；Spark 全程使用 extended 编码。GSL 原始随机渲染用 16 位轴向从前到后排序；PlayCanvas 随机渲染不排序。',
+        ],
+        memoryTitle: ['Memory', '内存'],
+        memoryMethod: [
+          'Per post-GC snapshot: JS heap + ArrayBuffer/external storage + WASM capacity across the main thread and live Workers. Maximum over sorted cases per run, then the median of three runs. GPU allocation is separate; stochastic render targets are excluded. MiB = 2²⁰ bytes.',
+          '每个 GC 后快照合计主线程与存活 Worker 的 JS heap、ArrayBuffer/外部存储和 WASM 容量；每轮取排序组最大值，再取三轮中位数。GPU 分配单独统计，不计随机渲染目标。MiB = 2²⁰ 字节。',
+        ],
+        heapChartTitle: ['JS heap + ArrayBuffer + WASM · MiB', 'JS heap + ArrayBuffer + WASM · MiB'],
+        gpuChartTitle: ['Explicit GPU allocation · MiB', '显式 GPU 分配 · MiB'],
+        heapMeaning: [
+          'An accounting sum (ArrayBuffer includes external-string storage; WASM is live Worker linear-memory capacity), not process RSS or deduplicated physical memory. Components are in harness/results.',
+          '这是统计项之和（ArrayBuffer 含外部字符串存储，WASM 为存活 Worker 线性内存容量），不是进程 RSS 或去重后的物理内存。分项数据见 harness/results。',
+        ],
+        gpuMeaning: [
+          'GPU allocation counts buffer, texture and renderbuffer capacity, excluding query buffers, driver overhead, alignment and the swapchain. It is allocated capacity, not physical VRAM (Apple uses unified memory). Browser RSS is kept only as raw diagnostics.',
+          'GPU 分配统计 buffer、texture 与 renderbuffer 容量，不含查询缓冲、驱动、对齐开销和交换链；是分配容量而非物理显存（Apple 为统一内存）。浏览器 RSS 仅作为原始诊断保留。',
+        ],
+        imagesTitle: ['Image comparison', '图像对照'],
+        displayMode: ['Display', '显示方式'],
+        sortedImage: ['Normal sorting', '正常排序'],
+        stochImage: ['Stochastic · raw', '随机透明 · 原始采样'],
+        imageNote: [
+          'Fixed matching cameras, 3024 × 1964 captures; click a render for the original. GSL WebGPU blends in sRGB to match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no spatial resolve or temporal accumulation.',
+          '统一固定相机，3024 × 1964 截图，点击查看原图。GSL WebGPU 在 sRGB 空间混合，与 WebGL 一致；保留原生 SH 解码与投影。原始随机渲染不做空间 resolve 或时间累积。',
+        ],
+        qualityNote: [
+          'MAE (RGB 0–255) and PSNR compare each backend with its own sorted capture. They measure image change, not quality or ranking.',
+          'MAE（RGB 0–255）与 PSNR 以各后端自己的排序截图为参照，只衡量图像变化，不代表画质或排名。',
+        ],
+        boundsTitle: ['Measurement scope', '测量边界'],
+        inputTitle: ['Full inputs, fixed resolution', '完整输入与固定画幅'],
+        inputTitleBody: [
+          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY/SH3, 3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.',
+          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 个 splat。完整 PLY/SH3，3024 × 1964 物理像素，垂直 FOV 45°，near 0.1，far 3000，背景 #101418。',
+        ],
+        sparkTitle: ['Spark source precision', 'Spark 源数据精度'],
+        sparkTitleBody: [
+          'Extended source and accumulator encoding, SH3 retained. Base records are 32 bytes with float32 positions; “extended” does not make every field float32.',
+          '源数据与累加器均为 extended 编码，保留 SH3。基础记录 32 字节、位置为 float32；extended 并非所有字段都是 float32。',
+        ],
+        ssTitle: ['PlayCanvas Engine and rendering settings', 'PlayCanvas Engine 与渲染设置'],
+        ssTitleBody: [
+          'Engine and Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255, antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. GSL: minimum radius 1, no maximum. Native coverage and projection may still differ.',
+          'Engine 与 Viewer：large 工作缓冲、minPixelSize 2、minContribution 0、alphaClipForward 1/255、antiAlias false、colorUpdateAngle 0、径向排序。Spark 与 Radix：半径 2–512。GSL：最小半径 1，无最大值。原生覆盖与投影仍可能不同。',
+        ],
+        cacheTitle: ['Caching and motion', '缓存与移动'],
+        cacheTitleBody: [
+          "Static tests keep drawing with native caches. Moving tests use the lab's real-time orbit (±45°, 8 s period). Async sorting stays active, so frames may use an earlier order.",
+          '静止测试持续绘制并保留原生缓存。移动测试使用与 lab 相同的实时轨迹（±45°，周期 8 秒）。异步排序保持开启，帧可能使用先前的排序。',
+        ],
+        supportTitle: ['Supported features', '可用功能'],
+        supportTitleBody: [
+          'All eight backends run sorted rendering; PlayCanvas WebGPU and both GSL backends also run raw stochastic. Main and closer views are tested static and moving.',
+          '八个后端均测试深度排序；PlayCanvas WebGPU 与两个 GSL 后端另测原始随机渲染。主视角与近景视角各测静止和移动。',
+        ],
+        sourcesTitle: ['Versions, data and sources', '版本、数据与来源'],
+        reference: ['Layout / protocol reference', '版式 / 协议参考'],
+        downloadJson: ['Download summary JSON', '下载汇总 JSON'],
+        downloadCsv: ['Download table CSV', '下载数值表 CSV'],
+        downloadKit: ['Reproduction instructions', '复现说明'],
+        closeButton: ['Close ×', '关闭 ×'],
+        default: ['default', '默认'],
+        runs: ['runs', '轮'],
+        frames: ['frames', '帧'],
+        noData: ['No data for this mode.', '该模式无可用数据。'],
+        perRun: ['Selected metric per run', '所选指标各轮数值'],
+        sceneStoch: [
+          'Native raw sampling, no spatial resolve or temporal accumulation. GSL keeps its 16-bit front-to-back sort; PlayCanvas skips sorting. Sampling patterns differ.',
+          '原生随机采样，不做空间 resolve 或时间累积。GSL 保留 16 位从前到后排序；PlayCanvas 不排序。各引擎采样模式不同。',
+        ],
+        sceneMoving: [
+          'Real-time ±45° orbit, 8 s period; one full period sampled after a 2 s warm-up. WebGL2 sorts asynchronously in Workers; WebGPU sorts in its command stream.',
+          '实时 ±45° 环绕，周期 8 秒；预热 2 秒后采样一个完整周期。WebGL2 在 Worker 中异步排序；WebGPU 在命令流内排序。',
+        ],
+        sceneStatic: [
+          'Fixed camera; 5 s sampled after a 2 s warm-up. Caches are retained and drawing continues.',
+          '固定相机；预热 2 秒后采样 5 秒。保留缓存，持续绘制。',
+        ],
+        independentRuns: ['independent runs', '轮独立运行'],
+        repeatNote: [
+          'Individual run values are shown to expose measurement variation.',
+          '显示各轮数值，可检查重复测量的波动。',
+        ],
+        location: ['Execution', '执行位置'],
+        worker: ['Worker execution', 'Worker 执行'],
+        rpc: ['Worker round trip', 'Worker 往返'],
+        async: ['Async completion', '异步完成延迟'],
+        radix: ['GPU radix span', 'GPU radix 跨度'],
+        gpuSync: ['GPU synchronous', 'GPU 同步'],
+        heap: ['JS heap + ArrayBuffer + WASM', 'JS heap + ArrayBuffer + WASM'],
+        allocation: ['GPU allocation', 'GPU 分配'],
+        unsupported: ['Not measured in this protocol.', '本协议未测量此模式。'],
+        original: ['Original ↗', '原图 ↗'],
+        imageDelta: ['Same-backend image difference', '同后端图像偏差'],
+        rawNote: [
+          'Per-frame data, exact versions and cameras for every run are in harness/results.',
+          '每轮的逐帧数据、精确版本和相机参数见 harness/results。',
+        ],
+        gpuTimestamps: ['GPU timestamps', 'GPU 时间戳'],
+        measuredLocally: ['Measured locally', '本地实测'],
+        groups: ['measurement groups', '组测量'],
+        privacy: ['Model files are not included or uploaded.', '未包含模型文件，也未上传云端。'],
+        best: ['Best', '最佳'],
+        winnerLegend: [
+          'Green marks the best value in each group; sorted and raw stochastic are ranked separately, ties shared.',
+          '绿色标记各组最佳值；深度排序与原始随机分别排名，并列共享。',
+        ],
+        gslSourceTitle: ['Gaussian Splat Lite source and accumulator', 'Gaussian Splat Lite 源数据与累加器'],
+        gslSourceBody: [
+          'Published source and accumulator encodings with full input SH. Effective settings and versions are recorded per run.',
+          '使用发布版的源数据与累加器编码，保留输入 SH。每轮记录实际参数与版本。',
+        ],
+        gslProcessingTitle: ['Three.js versions', 'Three.js 版本'],
+        gslProcessingBody: [
+          'GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native sorting and caching stay on.',
+          'GSL 与 Spark 使用 Three.js r187；Radix 0.0.1 使用 r186（其 WebGPU 路径不兼容 r187）。原生排序与缓存保持开启。',
+        ],
+        editorTitle: ['SuperSplat Viewer', 'SuperSplat Viewer'],
+        editorBody: [
+          'Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling off; model rotation reset to match the PLY.',
+          '通过公开 API 创建，使用固定版本的 Engine。深度排序、large 工作缓冲、统一相机与分辨率；关闭后期效果与性能缩放；重置模型旋转以匹配 PLY。',
+        ],
+        closeMoving: ['Moving · closer side view', '移动 · 近侧视角'],
+        sortedGroup: ['Depth-sorted rendering', '深度排序渲染'],
+        rawGroup: ['Raw stochastic rendering', '原始随机渲染'],
+        testDate: ['Tested', '测试日期'],
+        generated: ['Report generated', '报告生成时间'],
+        executionOrder: ['Execution order by round', '各轮执行顺序'],
+        round: ['Round', '轮次'],
+        sortSupplement: [
+          'Radix sorting was re-measured in fresh browsers: three interleaved rounds, 4 warm-up iterations, 16 samples. Frame and memory results are unchanged.',
+          'Radix 排序在新浏览器中补测：三轮交错，预热 4 次、采样 16 次。帧与内存结果不变。',
+        ],
+        radixKey: [
+          'Default 24-bit radial-distance key; lowest 7 float32 bits removed',
+          '默认 24 位径向距离键；舍去 float32 的低 7 位',
+        ],
+        radixExec: [
+          'WebGL2: GPU key readback → JavaScript Worker, 11 + 13-bit radix digits. WebGPU: 3 × 8-bit radix digits.',
+          'WebGL2：GPU 排序键回读 → JavaScript Worker，11 + 13 位 radix。WebGPU：3 轮 8 位 radix。',
+        ],
+        radixPrec: [
+          '16 fraction bits (GSL default: 15). Both encode camera distance. WebGL2 readback and Worker transfers add async latency.',
+          '保留 16 位尾数（GSL 默认 15 位）。两者均编码相机距离。WebGL2 回读与 Worker 传输增加异步延迟。',
+        ],
+        viewerKey: ['Engine WebGPU log-spaced squared-distance keys', 'Engine WebGPU 近似对数间距的距离平方键'],
+        viewerExec: [
+          'WebGPU: Engine portable 4-bit radix on this Apple GPU.',
+          'WebGPU：本机 Apple GPU 使用 Engine 可移植的 4 位 radix。',
+        ],
+        viewerPrec: [
+          'Same key mapping and precision as PlayCanvas WebGPU; native pass boundaries.',
+          '与 PlayCanvas WebGPU 相同的键映射和精度；使用原生 pass 边界。',
+        ],
+        frameP50: ['Frame interval P50', '帧间隔 P50'],
+        frameP95: ['Frame interval P95', '帧间隔 P95'],
+        fps: ['FPS', 'FPS'],
+        higher: ['FPS · Higher is better', 'FPS · 越高越好'],
+        frameSummary: ['Normal render loop · FPS / frame intervals', '正常渲染循环 · FPS / 帧间隔'],
+      };
+      const names = Object.fromEntries(DATA.backends.map(b => [b.id, b.name]));
+      const colors = Object.fromEntries(DATA.backends.map(b => [b.id, b.color]));
+      const modes = DATA.backends.map(b => b.id);
+      const $ = id => document.getElementById(id);
+      const tr = key => I18N[key]?.[$('language').value === 'zh' ? 1 : 0] ?? key;
+      const fmt = (n, d = 2) =>
+        Number.isFinite(n) ? n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—';
+      const dot = m => `<span class="dot" style="background:${colors[m]}"></span>`;
+      const median = a => {
+        a = a.filter(Number.isFinite).sort((a, b) => a - b);
+        const i = Math.floor(a.length / 2);
+        return a.length ? (a.length % 2 ? a[i] : (a[i - 1] + a[i]) / 2) : null;
+      };
+      const FRAME_KEYS = ['fps', 'frameP50', 'frameP95'];
+      const unitOf = key => (key === 'fps' ? 'FPS' : key.endsWith('MiB') ? 'MiB' : 'ms');
+      const digitsOf = unit => (unit === 'MiB' ? 1 : 2);
+      const aggregateMetric = (rows, key) => median(rows.map(r => r[key]));
+      function current() {
+        return { model: $('model').value, scenario: $('scenario').value, metric: $('metric').value };
+      }
+      function rowsFor(s, variant) {
+        return DATA.cases.filter(c => c.model === s.model && c.scenario === s.scenario && c.variant === variant);
+      }
+      function series(rows, key) {
+        const map = new Map();
+        for (const row of rows) {
+          const id = row.mode + '-' + row.precision;
+          if (!map.has(id)) map.set(id, { mode: row.mode, precision: row.precision, values: [], rows: [] });
+          map.get(id).values.push(row[key]);
+          map.get(id).rows.push(row);
+        }
+        return [...map.values()]
+          .map(s => ({ ...s, value: aggregateMetric(s.rows, key) }))
+          .sort((a, b) => modes.indexOf(a.mode) - modes.indexOf(b.mode) || a.precision.localeCompare(b.precision));
+      }
+      const title = s => names[s.mode];
+      const isBest = (value, values, d = 2, higher = false) =>
+        Number.isFinite(value) &&
+        Number(value.toFixed(d)) ===
+          (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(d))));
+      function metricValue(value, values, unit = 'ms', digits = 2, higher = unit === 'FPS') {
+        if (!Number.isFinite(value)) return '—';
+        const label = fmt(value, digits) + (unit ? ' ' + unit : '');
+        return isBest(value, values, digits, higher)
+          ? `<span class="winner" title="${tr('best')}">${label}</span>`
+          : label;
+      }
+      function metricCell(item, items, key, unit = unitOf(key), digits = digitsOf(unit)) {
+        return metricValue(
+          aggregateMetric(item.rows, key),
+          items.map(s => aggregateMetric(s.rows, key)),
+          unit,
+          digits,
+        );
+      }
+      function bars(id, items, unit, max = Math.max(1, ...items.map(s => s.value || 0))) {
+        const values = items.map(s => s.value),
+          digits = digitsOf(unit),
+          higher = unit === 'FPS';
+        $(id).innerHTML =
+          items
+            .map(
+              s =>
+                `<div class="barrow" data-best="${isBest(s.value, values, digits, higher)}"><div class="barlabel">${dot(s.mode)}${title(s)}<small>${s.rows.length} ${tr('runs')}${unit !== 'MiB' ? ' · ' + s.rows.reduce((n, r) => n + (r.n || 0), 0) + ' ' + tr('frames') : ''}${isBest(s.value, values, digits, higher) ? '<span class="badge">' + tr('best') + '</span>' : ''}</small></div><div class="track"><div class="bar" style="width:${(100 * s.value) / max}%;background-color:${colors[s.mode]}"></div></div><div class="barvalue">${fmt(s.value, digits)} <span class="small">${unit}</span></div></div>`,
+            )
+            .join('') || '<p>' + tr('noData') + '</p>';
+      }
+      function table(id, headers, rows) {
+        $(id).innerHTML =
+          '<table><thead><tr>' +
+          headers.map(h => '<th>' + tr(h) + '</th>').join('') +
+          '</tr></thead><tbody>' +
+          rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('') +
+          '</tbody></table>';
+      }
+      function render() {
+        const s = current(),
+          key = s.metric,
+          unit = unitOf(key);
+        $('metricDirection').textContent = tr(unit === 'FPS' ? 'higher' : 'lower');
+        const groups = [
+          { variant: 'sorted', label: 'sortedGroup', chart: 'mainChart', table: 'mainTable' },
+          { variant: 'stochastic', label: 'rawGroup', chart: 'rawChart', table: 'rawTable' },
+        ].map(group => ({ ...group, rows: rowsFor(s, group.variant), items: series(rowsFor(s, group.variant), key) }));
+        const max = Math.max(1, ...groups.flatMap(g => g.items.map(item => item.value || 0)));
+        for (const group of groups) {
+          bars(group.chart, group.items, unit, max);
+          table(
+            group.table,
+            ['renderer', ...FRAME_KEYS, 'perRun'],
+            group.items.map(item => [
+              dot(item.mode) + title(item),
+              ...FRAME_KEYS.map(k => metricCell(item, group.items, k)),
+              item.rows
+                .map(r =>
+                  metricValue(
+                    r[key],
+                    group.rows.filter(c => c.round === r.round).map(c => c[key]),
+                    '',
+                    digitsOf(unit),
+                    unit === 'FPS',
+                  ),
+                )
+                .join(' / '),
+            ]),
+          );
+        }
+        $('sceneNote').textContent = tr(s.scenario.includes('moving') ? 'sceneMoving' : 'sceneStatic');
+        $('findings').innerHTML =
+          groups
+            .map(group => {
+              const values = group.items.map(item => item.value),
+                best = group.items.filter(item => isBest(item.value, values, digitsOf(unit), unit === 'FPS'));
+              return best.length
+                ? `<div><b>${fmt(best[0].value, digitsOf(unit))} ${unit}</b><p>${tr(group.label)} · ${tr('best')}<br>${best.map(title).join(' / ')}</p></div>`
+                : '';
+            })
+            .join('') + `<div><b>${DATA.rounds} ${tr('independentRuns')}</b><p>${tr('repeatNote')}</p></div>`;
+        const sorts = DATA.sort.filter(c => c.model === s.model);
+        const sortItems = series(sorts, 'gpuSortP50');
+        $('sortSupplement').hidden = !sorts.some(row => row.diagnosticProtocol === 'radix-sort-diagnostic-v1');
+        $('sortSupplement').textContent = tr('sortSupplement');
+        table(
+          'sortTable',
+          ['renderer', 'location', 'worker', 'rpc', 'async', 'radix'],
+          sortItems.map(item => [
+            dot(item.mode) + title(item),
+            item.mode === 'pc-gl' || item.mode === 'radix-gl'
+              ? 'Worker / JavaScript'
+              : item.mode === 'spark-gl' || item.mode === 'gsl-gl'
+                ? 'Worker / WASM'
+                : tr('gpuSync'),
+            ...['workerP50', 'rpcP50', 'asyncP50', 'gpuSortP50'].map(k => metricCell(item, sortItems, k)),
+          ]),
+        );
+        const mem = DATA.memory.filter(c => c.model === s.model);
+        bars('heapMemory', series(mem, 'cpuMemoryMiB'), 'MiB');
+        bars('gpuMemory', series(mem, 'gpuMiB'), 'MiB');
+        const memoryItems = series(mem, 'cpuMemoryMiB');
+        table(
+          'memoryTable',
+          ['renderer', 'heap', 'allocation'],
+          memoryItems.map(item => [
+            dot(item.mode) + title(item),
+            ...['cpuMemoryMiB', 'gpuMiB'].map(k => metricCell(item, memoryItems, k, 'MiB', 1)),
+          ]),
+        );
+        renderGallery();
+        const orders = [
+          ...new Map(DATA.runs.filter(run => run.model === s.model).map(run => [run.round, run.order])).entries(),
+        ].sort((a, b) => a[0] - b[0]);
+        $('provenance').innerHTML =
+          `<p class="note">Spark ${DATA.versions.spark} · Gaussian Splat Lite ${DATA.versions.gsl} · three.js ${DATA.versions.three} · PlayCanvas ${DATA.versions.playcanvas} · Viewer ${DATA.versions.viewer} · Radix ${DATA.versions.radix} (Three.js ${DATA.versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round, order]) => tr('round') + ' ' + round + ': ' + order.map(mode => names[mode]).join(' → ')).join('<br>')}</p>`;
+        $('modelCount').textContent = (DATA.models[s.model].count / 1e6).toFixed(2) + 'M';
+        $('modelName').textContent = DATA.models[s.model].name + ' · SH3';
+        $('roundLabel').textContent = DATA.rounds + ' ' + tr('independentRuns') + ' · ' + tr('frameSummary');
+        const dateFormat = new Intl.DateTimeFormat($('language').value === 'zh' ? 'zh-CN' : 'en-GB', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC',
+        });
+        const dates = [DATA.testDates[0], DATA.testDates.at(-1)]
+          .filter((date, i, all) => i === 0 || date !== all[0])
+          .map(date => dateFormat.format(new Date(date + 'T12:00:00Z')))
+          .join(' – ');
+        $('testDate').textContent = tr('testDate') + ' · ' + dates + ' · ' + DATA.testTimeZone;
+        $('footer').textContent =
+          tr('generated') +
+          ' · ' +
+          DATA.generated +
+          ' · ' +
+          DATA.cases.length +
+          ' ' +
+          tr('groups') +
+          ' · ' +
+          tr('privacy');
+      }
+      function renderGallery() {
+        const model = $('model').value,
+          variant = $('imageVariant').value;
+        $('gallery').innerHTML = modes
+          .map(mode => {
+            const img = DATA.images.find(i => i.model === model && i.mode === mode && i.variant === variant);
+            return `<figure>${img ? `<img src="${img.thumb}" data-full="${img.path}" alt="${names[mode]} ${variant}" loading="lazy">` : '<div class="empty">' + tr('unsupported') + '</div>'}<figcaption><span>${dot(mode)}${names[mode]}</span>${img ? `<a href="${img.path}" target="_blank">${tr('original')}</a>` : ''}</figcaption></figure>`;
+          })
+          .join('');
+        const q = DATA.quality
+          .filter(q => q.model === model && q.variant === variant)
+          .sort((a, b) => modes.indexOf(a.mode) - modes.indexOf(b.mode));
+        table(
+          'qualityTable',
+          ['imageDelta', 'MAE (0–255)', 'PSNR'],
+          q.map(q => [names[q.mode], fmt(q.mae, 3), (q.mae === 0 ? '∞' : fmt(q.psnr, 2)) + ' dB']),
+        );
+        $('gallery')
+          .querySelectorAll('[data-full]')
+          .forEach(
+            img =>
+              (img.onclick = () => {
+                $('fullImage').src = img.dataset.full;
+                $('lightbox').classList.add('open');
+              }),
+          );
+      }
+      function setLanguage() {
+        document.documentElement.lang = $('language').value === 'zh' ? 'zh-CN' : 'en';
+        document.querySelectorAll('[data-i18n]').forEach(el => (el.textContent = tr(el.dataset.i18n)));
+        document
+          .querySelector('nav')
+          .setAttribute('aria-label', $('language').value === 'zh' ? '报告筛选' : 'Report filters');
+        $('fullImage').alt = $('language').value === 'zh' ? '原始渲染截图' : 'Original renderer capture';
+        render();
+      }
+      for (const id of ['model', 'scenario', 'metric']) $(id).addEventListener('change', render);
+      $('language').onchange = setLanguage;
+      $('imageVariant').onchange = renderGallery;
+      $('close').onclick = () => $('lightbox').classList.remove('open');
+      $('lightbox').onclick = e => {
+        if (e.target.id === 'lightbox') $('close').click();
+      };
+      addEventListener('keydown', e => {
+        if (e.key === 'Escape') $('close').click();
+      });
+      $('model').replaceChildren(...Object.entries(DATA.models).map(([id, model]) => new Option(model.name, id)));
+      $('model').value = DATA.models.hotel ? 'hotel' : Object.keys(DATA.models)[0];
+      $('browser').textContent = 'Chrome ' + DATA.browser.split('.')[0];
+      setLanguage();
+    </script>
+  </body>
+</html>

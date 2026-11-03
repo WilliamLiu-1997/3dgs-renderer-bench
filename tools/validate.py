@@ -1,136 +1,250 @@
-from pathlib import Path
-import json, math, sys, datetime, os
+"""Check raw harness runs against the protocol in harness/config.json and write outputs/validation.json.
+
+Flags: --<model> limits the models, --single expects one round, --partial skips completeness and
+execution-order checks.
+"""
+
+import datetime
+import json
+import math
+import sys
 from zoneinfo import ZoneInfo
 
-ROOT=Path(__file__).resolve().parent.parent
-R=Path(os.environ.get('RESULTS_DIR', ROOT/'harness/results-current'))
-counts={'elevator':2796503,'hotel':12202010,'willa':14469103}
-config=json.loads((ROOT/'harness/config.json').read_text())
-expected_cases={'spark':4,'pc-gl':4,'pc-gpu':8,'viewer-gpu':4,'radix-gpu':4,'radix-gl':4,'gsl-gl':8,'gsl-gpu':8}
-models=[m for m in counts if '--'+m in sys.argv] or counts
-round_count=1 if '--single' in sys.argv else 3
-expected={f'{model}-{mode}-r{round}' for model in models for mode in expected_cases for round in range(1,round_count+1)}
-actual={f.stem for f in R.glob('*.json') if not f.name.startswith('._')}
-actual={name for name in actual if any(name.startswith(model+'-') for model in models)}
-if '--partial' not in sys.argv:
- assert actual==expected, f'Missing: {expected-actual}; extra: {actual-expected}'
-frames=0;groups=0;sort_groups=0;browser=set();resolutions=set();test_dates=set()
-gsl_defaults={'minPixelRadius':1,'preBlurAmount':.3,'blurAmount':0,'clipXY':1.25,'focalAdjustment':2,'minAlpha':1/255}
-spark_defaults={'minPixelRadius':2,'maxPixelRadius':512,'preBlurAmount':.3,'blurAmount':0,'clipXY':1.25,'focalAdjustment':2,'minAlpha':1/255}
-initial_orders={};execution=[];sort_execution=[]
+from common import (
+    FRAME_METRIC,
+    OUTPUTS,
+    TIME_ZONE,
+    expected_parameters,
+    frame_statistics,
+    load_config,
+    results_dir,
+    run_files,
+)
+
+config = load_config()
+folder = results_dir()
+models = [m for m in config['models'] if '--' + m in sys.argv] or list(config['models'])
+round_count = 1 if '--single' in sys.argv else 3
+partial = '--partial' in sys.argv
+backends = config['backends']
+variants_for = {
+    mode: ['sorted', 'stochastic'] if mode in config['stochasticBackends'] else ['sorted'] for mode in backends
+}
+views = [(0, 1), (0.55, 0.65)]
+
+
+def round_order(base, round):
+    """Mirror of lab/config.js roundOrder."""
+    shift = ((round - 1) // 2) % len(base)
+    order = base[shift:] + base[:shift]
+    return order[::-1] if round % 2 == 0 else order
+
+
+expected = {f'{model}-{mode}-r{r}' for model in models for mode in backends for r in range(1, round_count + 1)}
+actual = {f.stem for f in run_files(folder) if any(f.stem.startswith(model + '-') for model in models)}
+if not partial:
+    assert actual == expected, f'Missing: {sorted(expected - actual)}; extra: {sorted(actual - expected)}'
+
+
+def check_case(name, mode, case, parameters):
+    state = case['state']
+    moving = case['moving']
+    assert case['metric'] == FRAME_METRIC and case['variant'] in variants_for[mode], name
+    assert case['framesInFlight'] == 1, name
+    assert case['motionAmplitudeDegrees'] == (config['motionAmplitudeDegrees'] if moving else 0), name
+    assert case['motionPeriodSeconds'] == config['motionPeriodSeconds'], name
+    if moving:
+        amplitude = math.radians(config['motionAmplitudeDegrees'])
+        angles = [r['cameraAngle'] for r in case['rows']]
+        assert abs(min(angles) - (case['angle'] - amplitude)) < 0.04, name
+        assert abs(max(angles) - (case['angle'] + amplitude)) < 0.04, name
+        for r in case['rows']:
+            phase = r['motionSeconds'] * 2 * math.pi / config['motionPeriodSeconds']
+            assert math.isclose(r['cameraAngle'], case['angle'] - amplitude * math.sin(phase), abs_tol=1e-9), name
+    assert not case['errors'], name
+    assert not case['memory']['unknownFormats'], (name, case['memory']['unknownFormats'])
+
+    # Sampling windows and the frame statistics the page reported.
+    duration = config['sampleSeconds']['moving' if moving else 'static'] * 1000
+    rows = case['rows']
+    assert case['warm']['frames'] > 0 and case['warm']['ms'] >= config['warmupSeconds'] * 1000, name
+    assert case['elapsedMs'] >= duration and case['frames'] == len(rows) > 1, name
+    assert all(math.isfinite(r['frameMs']) and r['frameMs'] > 0 for r in rows), name
+    assert math.isclose(case['elapsedMs'], sum(r['frameMs'] for r in rows), rel_tol=1e-9), name
+    assert all(
+        math.isclose(b['startMs'] - a['startMs'], a['frameMs'], abs_tol=1e-6)
+        for a, b in zip(rows, rows[1:], strict=False)
+    ), name
+    assert all('gpuMs' not in r and 'passes' not in r and 'completionMs' not in r for r in rows), name
+    stats = frame_statistics([r['frameMs'] for r in rows])
+    assert math.isclose(case['fps'] * case['frameMs']['mean'], 1000, rel_tol=1e-9), name
+    assert math.isclose(case['fps'], stats['fps'], rel_tol=1e-9), name
+    assert math.isclose(case['frameMs']['p50'], stats['frameP50'], rel_tol=1e-9), name
+    assert math.isclose(case['frameMs']['p95'], stats['frameP95'], rel_tol=1e-9), name
+
+    # Memory snapshot integrity.
+    heap = case['heap']
+    isolates = [heap['main'], *heap['workers']]
+    assert case['memory']['gpuBytes'] > 0 and heap['usedSize'] > 0, name
+    assert len({i['isolateId'] for i in isolates}) == len(isolates), name
+    assert len(heap['workers']) == sum(w['alive'] for w in case['memory']['workers']), name
+    assert all(i['usedSize'] > 0 and i['backingStorageSize'] >= 0 for i in isolates), name
+    assert heap['usedSize'] == sum(i['usedSize'] for i in isolates), name
+    assert heap['workerUsedSize'] == sum(i['usedSize'] for i in heap['workers']), name
+    assert heap['workerBackingStorageSize'] == sum(i['backingStorageSize'] for i in heap['workers']), name
+    assert heap['backingStorageSize'] == heap['main']['backingStorageSize'], name
+
+    # Rendering state.
+    assert state['stochastic'] == (case['variant'] == 'stochastic'), name
+    assert state['sortRadial'] is True, name
+    assert all(state['renderParameters'][k] == v for k, v in parameters.items()), name
+    if mode.startswith('gsl'):
+        assert state['spatialResolve'] is False, name
+        assert state['fastSort'] is True and case['fast'] is True, name
+        assert state['stochasticSort'] is True, name
+        assert state['sortBits'] == (16 if case['variant'] == 'stochastic' else 24), name
+    if mode == 'pc-gpu' and case['variant'] == 'stochastic':
+        assert state['sorting'] == 'none' and state['dither'] == 'bluenoise', name
+        assert state['spatialResolve'] is False and state['temporalResolve'] is False, name
+    return len(rows)
+
+
+def check_sort(name, mode, run, sort):
+    if sort.get('protocol') == 'radix-sort-diagnostic-v1':
+        assert mode.startswith('radix-') and sort['browser'] == run['browser'] and sort['warmupSamples'] == 4, name
+        assert not sort['consoleErrors'], name
+        assert sort['order'] == [m for m in run['order'] if m.startswith('radix-')], name
+    if mode.startswith('gsl'):
+        assert sort['fast'] is True, name
+    assert len(sort['rows']) == 16, name
+    for row in sort['rows']:
+        if mode in ['spark-gl', 'gsl-gl', 'pc-gl', 'radix-gl']:
+            calls = [r for r in row['rpc'] if r['name'].startswith('sort')]
+            assert calls and all(r['workerMs'] > 0 for r in calls), name
+            assert row['sortJobs'] and all(j['ms'] > 0 for j in row['sortJobs']), name
+        else:
+            passes = [p for p in row['passes'] if p['stage'] == 'sort']
+            assert passes and all(p['end'] > p['start'] for p in passes), name
+
+
+def check_run(name, run):
+    mode, initial = run['mode'], run['initial']
+    state = initial['state']
+    assert not run.get('failure'), (name, run.get('failure'))
+    assert not run['consoleErrors'], (name, run['consoleErrors'])
+    assert run['config'] == config, name
+    assert initial['resolution'] == [config['width'], config['height']] and initial['dpr'] == config['dpr'], name
+    assert state['sourceCount'] == config['models'][run['model']]['count'] and state['sh'] == 3, name
+    assert len(run['order']) == len(set(run['order'])) and mode in run['order'], name
+    assert state['sortRadial'] is True, name
+    parameters = expected_parameters(mode)
+    assert all(state['renderParameters'][k] == v for k, v in parameters.items()), name
+    camera = config['models'][run['model']]
+    assert initial['camera']['position'] == [a + b for a, b in zip(camera['target'], camera['offset'], strict=True)], (
+        name
+    )
+    if mode.startswith('gsl'):
+        assert state['reversedDepthBuffer'] is True, name
+    if mode == 'spark-gl':
+        assert 'ExtSplats' in state['sourceType'] and state['accumulatorExtended'], name
+        assert state['lodEnabled'] is True and state['hasLodData'] is False, name
+    if mode == 'viewer-gpu':
+        assert state['engineVersion'] == config['versions']['playcanvas'], name
+        assert state['engineCommit'] == config['commits']['playcanvas'], name
+    if mode == 'gsl-gpu':
+        assert state['workingColorSpace'] == 'srgb' and state['outputColorSpace'] == 'srgb', name
+        assert state['deviceConfiguration'] == 'three-default', name
+        assert 'timestamp-query' in state['deviceFeatures'], name
+        assert state['compatibilityMode'] == ('core-features-and-limits' not in state['deviceFeatures']), name
+    expected_cases = {(v, m, a, s) for v in variants_for[mode] for m in [False, True] for a, s in views}
+    assert {(c['variant'], c['moving'], c['angle'], c['scale']) for c in run['cases']} == expected_cases, name
+    assert len(run['cases']) == len(expected_cases) and len(run['sort']) == 1, name
+    frames = sum(check_case(name, mode, case, parameters) for case in run['cases'])
+    for sort in run['sort']:
+        check_sort(name, mode, run, sort)
+    return frames
+
+
+frames = groups = sort_groups = 0
+browsers, test_dates = set(), set()
+initial_orders, execution, sort_execution = {}, [], []
 for name in sorted(actual):
- d=json.loads((R/(name+'.json')).read_text());mode=d['mode'];initial=d['initial']
- assert not d.get('failure'), (name,d.get('failure'))
- assert not d['consoleErrors'],(name,d['consoleErrors'])
- execution.append((d['started'],d['round'],d['model'],mode))
- assert initial['resolution']==[3024,1964] and initial['dpr']==2,name
- assert initial['state']['sourceCount']==counts[d['model']],name
- assert initial['state']['sh']==3,name
- assert d['config']==config,name
- assert len(d['order'])==len(set(d['order'])) and mode in d['order'],name
- if d['round']==1:
-  if d['model'] in initial_orders:assert d['order']==initial_orders[d['model']],name
-  initial_orders[d['model']]=d['order']
- if d['model'] in initial_orders:
-  base=initial_orders[d['model']];shift=((d['round']-1)//2)%len(base);order=base[shift:]+base[:shift]
-  if d['round']%2==0:order.reverse()
-  assert d['order']==order,name
- assert d['config']['protocol']==config['protocol'],name
- assert d['config']['versions']==config['versions'],name
- expected_parameters=spark_defaults if mode=='spark' else gsl_defaults if mode.startswith('gsl') else {'method':'ewa','sortBits':24,'sourceType':'extSplats','sortMode':'gpu' if mode=='radix-gpu' else 'cpu'} if mode.startswith('radix') else {'minPixelSize':2,'minContribution':0,'alphaClipForward':1/255,'antiAlias':False,'colorUpdateAngle':0,'radialSorting':True,'dataFormat':'large'}
- assert initial['state']['sortRadial'] is True,name
- assert all(initial['state']['renderParameters'][k]==v for k,v in expected_parameters.items()),name
- if mode.startswith('gsl'):assert initial['state']['reversedDepthBuffer'] is True,name
- camera=config['models'][d['model']]
- assert initial['camera']['position']==[a+b for a,b in zip(camera['target'],camera['offset'])],name
- assert len(d['cases'])==expected_cases[mode],name
- assert len(d['sort'])==1,name
- if mode=='spark':
-  assert 'ExtSplats' in initial['state']['sourceType'] and initial['state']['accumulatorExtended'],name
-  assert initial['state']['lodEnabled'] is True and initial['state']['hasLodData'] is False,name
- if mode=='viewer-gpu':
-  assert initial['state']['engineVersion']==config['versions']['playcanvas'],name
-  assert initial['state']['engineCommit']==config['commits']['playcanvas'],name
- if mode=='gsl-gpu':
-  assert initial['state']['workingColorSpace']=='srgb' and initial['state']['outputColorSpace']=='srgb',name
-  assert initial['state']['deviceConfiguration']=='three-default',name
-  assert 'timestamp-query' in initial['state']['deviceFeatures'],name
-  assert initial['state']['compatibilityMode']==('core-features-and-limits' not in initial['state']['deviceFeatures']),name
- variants=['sorted','stochastic'] if mode in ['pc-gpu','gsl-gl','gsl-gpu'] else ['sorted']
- expected_scenarios={(v,m,a,.65 if a else 1) for v in variants for m in [False,True] for a in [0,.55]}
- assert {(c['variant'],c['moving'],c['angle'],c['scale']) for c in d['cases']}==expected_scenarios,name
- test_dates.add(datetime.datetime.fromisoformat(d['started']).astimezone(ZoneInfo('Australia/Sydney')).date().isoformat())
- for c in d['cases']:
-  assert c['motionAmplitudeDegrees']==(45 if c['moving'] else 0),name
-  if c['moving']:
-   angles=[r['cameraAngle'] for r in c['rows']]
-   assert abs(min(angles)-(c['angle']-math.pi/4))<1e-12 and abs(max(angles)-(c['angle']+math.pi/4))<1e-12,name
-  assert c['variant'] in ['sorted','stochastic'],name
-  assert not c['errors'],name
-  assert not c['memory']['unknownFormats'],(name,c['memory']['unknownFormats'])
-  assert c['warm']['frames']>=20 and c['warm']['ms']>=1000,name
-  assert len(c['rows'])>=(64 if c['variant']=='sorted' else 48),name
-  assert all(math.isfinite(r['gpuMs']) and r['gpuMs']>0 for r in c['rows']),name
-  assert c['memory']['gpuBytes']>0 and c['heap']['usedSize']>0,name
-  heap=c['heap'];isolates=[heap['main'],*heap['workers']]
-  assert all(math.isfinite(r['completionMs']) and r['completionMs']>0 for r in c['rows']),name
-  assert len({i['isolateId'] for i in isolates})==len(isolates),name
-  assert len(heap['workers'])==sum(w['alive'] for w in c['memory']['workers']),name
-  assert all(i['usedSize']>0 and i['backingStorageSize']>=0 for i in isolates),name
-  assert heap['usedSize']==sum(i['usedSize'] for i in isolates),name
-  assert heap['workerUsedSize']==sum(i['usedSize'] for i in heap['workers']),name
-  assert heap['workerBackingStorageSize']==sum(i['backingStorageSize'] for i in heap['workers']),name
-  assert heap['backingStorageSize']==heap['main']['backingStorageSize'],name
-  assert c['state']['stochastic']==c['variant'].startswith('stochastic'),name
-  assert c['state']['sortRadial'] is True,name
-  assert all(c['state']['renderParameters'][k]==v for k,v in expected_parameters.items()),name
-  if mode.startswith('gsl'):
-   assert c['state']['spatialResolve'] is False,name
-  if mode=='pc-gpu' and c['variant']=='stochastic':
-   assert c['state']['sorting']=='none' and c['state']['dither']=='bluenoise',name
-   assert c['state']['spatialResolve'] is False and c['state']['temporalResolve'] is False,name
-   assert all(not any(p['stage']=='sort' for p in r['passes']) for r in c['rows']),name
-  if mode.startswith('gsl'):
-   assert c['state']['fastSort'] is True and c['fast'] is True,name
-   assert c['state']['stochasticSort'] is True,name
-   assert c['state']['sortBits']==(16 if c['variant']=='stochastic' else 24),name
-  frames+=len(c['rows']);groups+=1
- for s in d['sort']:
-  if s.get('protocol')=='radix-sort-diagnostic-v1':
-   assert mode.startswith('radix-') and s['browser']==d['browser'] and s['warmupSamples']==4,name
-   assert not s['consoleErrors'],name
-   assert s['order']==[m for m in d['order'] if m.startswith('radix-')],name
-   sort_execution.append((s['measuredAt'],d['round'],d['model'],mode))
-  if mode.startswith('gsl'):assert s['fast'] is True,name
-  assert len(s['rows'])==16,name
-  for row in s['rows']:
-   if mode in ['spark','gsl-gl','pc-gl','radix-gl']:
-    calls=[r for r in row['rpc'] if r['name'].startswith('sort')]
-    assert calls and all(r['workerMs']>0 for r in calls),name
-    assert row['sortJobs'] and all(j['ms']>0 for j in row['sortJobs']),name
-   else:
-    passes=[p for p in row['passes'] if p['stage']=='sort']
-    assert passes and all(p['end']>p['start'] for p in passes),name
-  sort_groups+=1
- browser.add(d['browser']);resolutions.add(tuple(initial['resolution']))
-if '--partial' not in sys.argv:
- expected_execution=[]
- for round in range(1,round_count+1):
-  for model in config['models']:
-   if model not in models:continue
-   base=initial_orders[model]
-   assert set(base)==set(expected_cases),model
-   shift=((round-1)//2)%len(base);order=base[shift:]+base[:shift]
-   if round%2==0:order.reverse()
-   expected_execution.extend((round,model,mode) for mode in order)
- assert [entry[1:] for entry in sorted(execution)]==expected_execution,'Execution timestamps do not match interleaved round order'
- if sort_execution:
-  assert [entry[1:] for entry in sorted(sort_execution)]==[entry for entry in expected_execution if entry[2].startswith('radix-')],'Radix sort supplement order mismatch'
-summary={'runs':len(actual),'performanceGroups':groups,'measuredFrames':frames,'sortGroups':sort_groups,'sortSamples':16*sort_groups,'renderingSettingsAdjustedAsCloselyAsPossible':True,'gslDefaultSortOnly':True,'playcanvasWebGPUStochastic':True,'rawStochasticOnly':True,'gslStochasticFrontToBackSort':True,'fourViewsPerVariant':True,'testDates':sorted(test_dates),'testTimeZone':'Australia/Sydney','superSplatViewerSortedOnly':True,'allSortedCasesRadial':True,'motionAmplitudeDegrees':45,'browsers':sorted(browser),'physicalResolution':[list(r) for r in resolutions],'dpr':2,'consoleErrors':0,'unknownGpuFormats':0,'sparkExtendedSourceAndAccumulator':True,'sparkDefaultLodWithoutHierarchy':True,'cameraMatchesConfig':True,'gslWebGPUViewerColorSpace':'srgb','frameMetric':'Frame Completion P50 and P95','memoryMetric':'JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate','complete':actual==expected}
-summary['interleavedExecutionOrderVerified']='--partial' not in sys.argv
-summary['radixSortSupplementRuns']=len(sort_execution)
-summary['radixDefaultSortBits']=24
-print(json.dumps(summary,ensure_ascii=False,indent=2))
-if '--partial' not in sys.argv:
- filename='validation'+('-'+'-'.join(models) if len(models)<len(counts) else '')+('-single' if '--single' in sys.argv else '')+'.json'
- (ROOT/'outputs'/filename).write_text(json.dumps(summary,ensure_ascii=False,indent=2))
+    run = json.loads((folder / (name + '.json')).read_text())
+    frames += check_run(name, run)
+    groups += len(run['cases'])
+    sort_groups += len(run['sort'])
+    browsers.add(run['browser'])
+    test_dates.add(datetime.datetime.fromisoformat(run['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat())
+    execution.append((run['started'], run['round'], run['model'], run['mode']))
+    sort_execution.extend(
+        (s['measuredAt'], run['round'], run['model'], run['mode'])
+        for s in run['sort']
+        if s.get('protocol') == 'radix-sort-diagnostic-v1'
+    )
+    # Every round derives its order from round one's order for the same model.
+    model = run['model']
+    if run['round'] == 1:
+        assert initial_orders.setdefault(model, run['order']) == run['order'], name
+    if model in initial_orders:
+        assert run['order'] == round_order(initial_orders[model], run['round']), name
+
+if not partial:
+    expected_execution = [
+        (r, model, mode)
+        for r in range(1, round_count + 1)
+        for model in config['models']
+        if model in models
+        for mode in round_order(initial_orders[model], r)
+    ]
+    assert all(set(initial_orders[m]) == set(backends) for m in models)
+    assert [entry[1:] for entry in sorted(execution)] == expected_execution, (
+        'Execution order does not match the schedule'
+    )
+    if sort_execution:
+        assert [entry[1:] for entry in sorted(sort_execution)] == [
+            e for e in expected_execution if e[2].startswith('radix-')
+        ], 'Radix sort supplement order mismatch'
+
+summary = {
+    'protocol': config['protocol'],
+    'complete': actual == expected,
+    'runs': len(actual),
+    'performanceGroups': groups,
+    'measuredFrames': frames,
+    'sortGroups': sort_groups,
+    'sortSamples': 16 * sort_groups,
+    'frameMetric': FRAME_METRIC,
+    'fpsMatchesMeanFrameInterval': True,
+    'frameStatisticsRecomputedFromIntervals': True,
+    'warmupSeconds': config['warmupSeconds'],
+    'sampleSeconds': config['sampleSeconds'],
+    'motionAmplitudeDegrees': config['motionAmplitudeDegrees'],
+    'motionPeriodSeconds': config['motionPeriodSeconds'],
+    'interleavedExecutionOrderVerified': not partial,
+    'radixSortSupplementRuns': len(sort_execution),
+    'radixDefaultSortBits': 24,
+    'renderingSettingsAdjustedAsCloselyAsPossible': True,
+    'allSortedCasesRadial': True,
+    'fourViewsPerVariant': True,
+    'stochasticBackends': config['stochasticBackends'],
+    'gslStochasticFrontToBackSort': True,
+    'sparkExtendedSourceAndAccumulator': True,
+    'sparkDefaultLodWithoutHierarchy': True,
+    'cameraMatchesConfig': True,
+    'gslWebGPUViewerColorSpace': 'srgb',
+    'consoleErrors': 0,
+    'unknownGpuFormats': 0,
+    'browsers': sorted(browsers),
+    'physicalResolution': [config['width'], config['height']],
+    'dpr': config['dpr'],
+    'testDates': sorted(test_dates),
+    'testTimeZone': TIME_ZONE,
+    'memoryMetric': 'JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate',
+}
+print(json.dumps(summary, ensure_ascii=False, indent=2))
+if not partial:
+    suffix = ('-' + '-'.join(models) if len(models) < len(config['models']) else '') + (
+        '-single' if round_count == 1 else ''
+    )
+    OUTPUTS.mkdir(exist_ok=True)
+    (OUTPUTS / f'validation{suffix}.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')

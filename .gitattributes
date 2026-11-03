@@ -1,5 +1,3 @@
 vendor/** linguist-vendored
-harness/dist/** linguist-vendored
 harness/results/** linguist-generated
-3DGS-Renderer-Bench.html linguist-generated
-benchmark-* linguist-generated
+report/** linguist-generated
