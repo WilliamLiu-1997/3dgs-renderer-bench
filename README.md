@@ -8,7 +8,7 @@ Measured comparisons of [Radix](https://github.com/sparkjsdev/radix), [Spark](ht
 
 ## Current test configuration
 
-These measurements use GSL 1.6.2, Spark 2.4.0, Radix 0.0.1, SuperSplat Viewer 1.42.0 and [PlayCanvas 2.24.0-beta.30](https://github.com/playcanvas/engine/commit/876ba2e7dffc246b1008695f23f60ac1a9b96109). Radix runs on WebGPU and WebGL2 with its native default 24-bit sorting, using Three.js 0.186.1; GSL and Spark use 0.187.0. Viewer replaces the former Editor adapter. Tests alternate forward/reverse order, then rotate the starting backend. The three local inputs are Elevator, HotelFareza and WillaGlobalPoland.
+These measurements use GSL 1.6.2, Spark 2.4.0, Radix 0.0.1, SuperSplat Viewer 1.42.0 and [PlayCanvas 2.24.0-beta.30](https://github.com/playcanvas/engine/commit/876ba2e7dffc246b1008695f23f60ac1a9b96109). Radix runs on WebGPU and WebGL2 with its native default 24-bit sorting, using Three.js 0.186.1; GSL and Spark use 0.187.0. Tests alternate forward/reverse order, then rotate the starting backend. The three local inputs are Elevator, HotelFareza and WillaGlobalPoland.
 
 ## Current measurements
 
@@ -26,7 +26,7 @@ Frame completion includes CPU submission, GPU completion and timestamp-query rea
 
 Open `3DGS-Renderer-Bench.html`. It includes English/Chinese controls, per-round comparisons and embedded screenshot previews. Original captures link to `harness/results`. No model files are required to read the report.
 
-`benchmark-data.json` and `benchmark-summary.csv` contain summary measurements; `validation.json` records the completed checks. `harness/results` contains 72 raw run JSON files and 33 round-one captures. Previous measurements remain available in Git history; the [historical v1.0.0 kit](https://github.com/WilliamLiu-1997/3dgs-renderer-bench/releases/download/v1.0.0/renderer-benchmark-kit.zip) uses a different protocol and versions.
+`benchmark-data.json` and `benchmark-summary.csv` contain summary measurements; `validation.json` records the completed checks. `harness/results` contains 72 raw run JSON files and 33 round-one captures.
 
 ## Test your own model
 
@@ -87,4 +87,4 @@ Builds the report, its current original captures, and `/test/` into `site/`. Mod
 
 ## License
 
-Benchmark code is MIT licensed. Renderer code retains its licenses in `licenses/`. The pinned Engine snapshot and its license are in `vendor/`; Viewer and Radix retain their package licenses. Historical Editor measurements remain labeled as such.
+Benchmark code is MIT licensed. Renderer code retains its licenses in `licenses/`. The pinned Engine snapshot and its license are in `vendor/`; Viewer and Radix retain their package licenses.

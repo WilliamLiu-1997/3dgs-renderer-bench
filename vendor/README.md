@@ -10,7 +10,7 @@ To reproduce the JavaScript build in a checkout of that commit, install its lock
 ENGINE_BUILD_REVISION=$(git rev-parse HEAD) node build.mjs --type=rel --format=esm
 ```
 
-The snapshot packages `build/playcanvas.mjs`, `scripts/` and `LICENSE`, using `build/playcanvas.mjs` as the ESM entry. No Engine source or shader changes are applied. The former vendored SuperSplat Editor is available in Git history; new tests use `@playcanvas/supersplat-viewer`.
+The snapshot packages `build/playcanvas.mjs`, `scripts/` and `LICENSE`, using `build/playcanvas.mjs` as the ESM entry. No Engine source or shader changes are applied.
 
 # Radix package metadata correction
 

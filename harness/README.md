@@ -51,7 +51,7 @@ Spark's radius limits are focal-scaled; PlayCanvas's minimum projected size is m
 
 Every backend measures static and moving versions of both the main and closer side views. PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.6.2 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
 
-Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). Viewer retains its update loop but suppresses automatic draws. Its load time includes the first ready frame. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
+Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). Viewer retains its update loop but suppresses automatic draws. Its loading timer includes Viewer initialization, model loading and initial rendering, ending at the `firstFrame` event. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
 
 ## Measurement definitions
 
@@ -72,15 +72,15 @@ Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md)
 
 Radix retains its native default 24-bit keys, discarding the lowest seven float32 distance bits (16 fraction bits remain). WebGL2 uses JavaScript Worker radix digits of 11 and 13 bits; WebGPU uses three 8-bit radix digits.
 
-Spark retains float32 keys and uses two 16-bit Worker/WASM radix digits. PlayCanvas and Viewer now map float32 squared-distance bits to approximately log-spaced radial keys. WebGL2 uses 16-bit counting keys; WebGPU selects 16–20 bits from the active count and rounds to the radix width. The mapped range starts at `nearClip / 1024` and ends at the active scene bound. Radial sorting bypasses the older weighted depth bins. This Apple GPU uses portable 4-bit radix; native automatic OneSweep selection targets supported NVIDIA devices.
+Spark retains float32 keys and uses two 16-bit Worker/WASM radix digits. PlayCanvas and Viewer map float32 squared-distance bits to approximately log-spaced radial keys. WebGL2 uses 16-bit counting keys; WebGPU selects 16–20 bits from the active count and rounds to the radix width. The mapped range starts at `nearClip / 1024` and ends at the active scene bound. This Apple GPU uses portable 4-bit radix.
 
-GSL 1.6.2 uses camera distance, rather than squared distance, for radial sorting on both backends. Default sorting drops the lowest eight float32-key bits: one counting pass over 23 effective bits on WebGL2 (32 MiB count table), three 8-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL 1.6.2’s default 16-bit front-to-back ordering (two 8-bit GPU radix passes on WebGPU).
+GSL 1.6.2 uses camera distance for radial sorting on both backends. Default sorting drops the lowest eight float32-key bits: one counting pass over 23 effective bits on WebGL2 (32 MiB count table), three 8-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL 1.6.2’s default 16-bit front-to-back ordering (two 8-bit GPU radix passes on WebGPU).
 
 GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally and blends/outputs in sRGB, matching the lab. PlayCanvas uses linear tone mapping and native sRGB output. Native SH decoding and source encodings remain unchanged.
 
 ## Outputs
 
-`results-current/*.json` contains per-frame/per-pass measurements, effective settings, versions, camera, memory and errors. Round-one captures enter the gallery. Test dates use Australia/Sydney. The former Editor adapter is removed; Viewer and Radix are separate backends. Shader and sorting algorithms remain unchanged.
+`results-current/*.json` contains per-frame/per-pass measurements, effective settings, versions, camera, memory and errors. Round-one captures enter the gallery. Test dates use Australia/Sydney. Measurements use the renderers' native shaders and sorting algorithms.
 
 From the repository root:
 
