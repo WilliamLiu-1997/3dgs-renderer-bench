@@ -19,3 +19,5 @@ models/*
 !models/README.md
 harness/pilot/
 harness/results-original/
+harness/results-current/
+!models/WillaGlobalPoland.json

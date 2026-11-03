@@ -45,6 +45,25 @@
           28
         ]
       }
+    },
+    {
+      "model": "willa",
+      "file": "WillaGlobalPoland.ply",
+      "bytes": 3414709820,
+      "splats": 14469103,
+      "sha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
+      "camera": {
+        "target": [
+          -0.01253509521484375,
+          11.724157810211182,
+          12.406075477600098
+        ],
+        "offset": [
+          0,
+          -19.96675499195834,
+          91.27659424895242
+        ]
+      }
     }
   ],
   "config": {
@@ -54,19 +73,25 @@
     "width": 3024,
     "height": 1964,
     "versions": {
-      "gsl": "1.1.7",
-      "spark": "2.2.0",
-      "three": "0.186.1",
-      "playcanvas": "2.23.0-beta.20",
-      "supersplat": "3.4.2"
+      "gsl": "1.6.2",
+      "spark": "2.4.0",
+      "radix": "0.0.1",
+      "viewer": "1.42.0",
+      "three": "0.187.0",
+      "playcanvas": "2.24.0-beta.30",
+      "threeRadix": "0.186.1"
     },
-    "protocol": "aligned-six-backends-four-views-raw-20260927",
-    "motionAmplitudeDegrees": 45
+    "protocol": "radial-eight-backends-four-views-gsl162-radix24-pc30-20261103",
+    "motionAmplitudeDegrees": 45,
+    "commits": {
+      "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+    }
   },
   "gslWebGPUWorkingColorSpace": "srgb",
-  "protocol": "Three fresh Chrome processes per backend and model; rotated/reversed backend order; original published cameras and full PLY/SH3 inputs; rendering settings adjusted as closely as possible; camera-axis sorting; GSL default sorting only; one frame in flight; native GPU timestamps. PlayCanvas Engine 2.23.0-beta.20 uses large on WebGL2 and WebGPU. All backends measure static and moving main and closer side views. Additional raw stochastic cases in the same four views compare PlayCanvas WebGPU native blue noise, SuperSplat and both GSL backends. Spatial resolve and temporal accumulation are disabled. GSL 1.1.7 retains its default 16-bit front-to-back stochastic sorting. Post-GC main and live Worker V8 heaps are sampled before instrumentation traversal; external backing and WASM capacity remain separate. SuperSplat 3.4.2 adds its native WebGPU renderer, fixed minPixelSize 2, native stochastic depth occlusion enabled and motion-adaptive contribution culling disabled, and raw stochastic with warp disabled. Moving cases use a frame-stepped sinusoidal orbit with 45 degrees amplitude on either side of the base view, matching the lab amplitude.",
+  "protocol": "Three fresh Chrome processes per backend and model; paired forward/reverse backend order with rotating starting backend. Full original PLY/SH3 inputs; matched cameras and resolution; rendering settings adjusted as closely as possible; radial sorting in all depth-sorted groups; native caching; GSL default sorting and Radix native default 24-bit sorting. All eight backends measure static and moving main and closer side views with a frame-stepped sinusoidal orbit of ±45 degrees. PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering without spatial resolve or temporal accumulation; GSL retains default 16-bit axial front-to-back stochastic sorting. Frame completion includes submission, GPU completion and timestamp-query readback with one frame in flight. Memory records post-GC main and live Worker V8 heaps, external backing and WASM capacity. Viewer retains its update loop with automatic drawing disabled. Radix CPU Worker execution, message round trip and full asynchronous sorting are measured in each full run. All frame, sort, memory and capture results were rerun together. Exact versions and Engine commit are recorded in config.",
   "testDates": [
-    "2026-09-27"
+    "2026-11-03"
   ],
-  "testTimeZone": "Australia/Sydney"
+  "testTimeZone": "Australia/Sydney",
+  "browser": "156.0.8078.80"
 }

@@ -4,7 +4,9 @@ harness/*
 !harness/results/
 harness/results/*
 !harness/results/*.png
-vendor/
+vendor/*
+!vendor/playcanvas-2.24.0-beta.30.tgz
+!vendor/sparkjsdev-radix-0.0.1.tgz
 licenses/
 models/
 .venv/

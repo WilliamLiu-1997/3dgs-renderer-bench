@@ -1,9 +1,9 @@
 {
-  "runs": 36,
-  "performanceGroups": 240,
-  "measuredFrames": 22192,
-  "sortGroups": 36,
-  "sortSamples": 576,
+  "runs": 72,
+  "performanceGroups": 396,
+  "measuredFrames": 33792,
+  "sortGroups": 72,
+  "sortSamples": 1152,
   "renderingSettingsAdjustedAsCloselyAsPossible": true,
   "gslDefaultSortOnly": true,
   "playcanvasWebGPUStochastic": true,
@@ -11,14 +11,14 @@
   "gslStochasticFrontToBackSort": true,
   "fourViewsPerVariant": true,
   "testDates": [
-    "2026-09-27"
+    "2026-11-03"
   ],
   "testTimeZone": "Australia/Sydney",
-  "supersplatNativeDepthOcclusion": true,
-  "allSortRadialFalse": true,
+  "superSplatViewerSortedOnly": true,
+  "allSortedCasesRadial": true,
   "motionAmplitudeDegrees": 45,
   "browsers": [
-    "153.0.8010.53"
+    "156.0.8078.80"
   ],
   "physicalResolution": [
     [
@@ -35,5 +35,8 @@
   "gslWebGPUViewerColorSpace": "srgb",
   "frameMetric": "Frame Completion P50 and P95",
   "memoryMetric": "JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate",
-  "complete": true
+  "complete": true,
+  "interleavedExecutionOrderVerified": true,
+  "radixSortSupplementRuns": 0,
+  "radixDefaultSortBits": 24
 }

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createRadix } from './radix-adapter.js';
+import { createViewerAdapter } from './viewer-adapter.js';
 import { PACKAGES, exactVersion } from './config.js';
 
 export async function loadLibrary(key, version) {
@@ -10,10 +12,11 @@ export async function loadLibrary(key, version) {
   if (!response.ok) throw Error(`${pkg.name}@${version} could not be loaded (${response.status})`);
   const metadata = await response.json();
   if (metadata.version !== version) throw Error('Loaded version does not match the selection');
-  const entry = metadata.module;
+  const entry = pkg.entry ?? metadata.module;
   if (!entry || typeof entry !== 'string') throw Error('This version has no loadable ESM entry');
   const lib = await import(/* @vite-ignore */ new URL(entry, base).href);
-  return { lib, version: metadata.version, moduleURL: new URL(entry, base).href, peerDependencies: metadata.peerDependencies ?? {} };
+  if (version === pkg.version && pkg.commit && lib.revision !== pkg.commit) throw Error('Bundled PlayCanvas commit mismatch');
+  return { lib, version: metadata.version, commit: version === pkg.version ? pkg.commit : undefined, moduleURL: new URL(entry, base).href, peerDependencies: metadata.peerDependencies ?? {} };
 }
 
 function requireFields(object, values) {
@@ -29,6 +32,11 @@ export async function createAdapter(backend, versions, settings, canvas, camera,
   if (gpu && !navigator.gpu) throw Error('WebGPU is unavailable in this browser or device');
   const url = URL.createObjectURL(file);
   try {
+    if (backend.lib === 'radix') return await createRadix(lib, gpu, canvas, camera, url, file.name, size, settings, loaded);
+    if (backend.lib === 'viewer') {
+      const { lib: pc } = await loadLibrary('playcanvas', versions.playcanvas);
+      return await createViewerAdapter(lib, pc, canvas, camera, url, file.name, size, settings, loaded);
+    }
     if (backend.lib === 'playcanvas') return await createPlayCanvas(lib, gpu, canvas, camera, url, file.name, size, settings, loaded);
     return await createThree(lib, backend.lib === 'spark', gpu, canvas, camera, url, file.name, size, settings, loaded);
   } finally { URL.revokeObjectURL(url); }
@@ -58,7 +66,7 @@ async function createThree(lib, spark, gpu, canvas, camera, url, filename, size,
   const { extended, ...params } = settings;
   const Constructor = spark ? lib.SparkRenderer : lib.GaussianSplatRenderer;
   if (!Constructor) throw Error('This version lacks the required public renderer API');
-  const gs = new Constructor({ renderer, ...params, ...(spark ? { accumExtSplats: extended } : { autoStochastic: false }) });
+  const gs = new Constructor({ renderer, ...params, ...(spark ? { accumExtSplats: extended } : {}) });
   requireFields(gs, params);
   if (spark) requireFields(gs, { accumExtSplats: extended });
   scene.add(gs);
@@ -72,7 +80,7 @@ async function createThree(lib, spark, gpu, canvas, camera, url, filename, size,
   const bounds = { center: box.getCenter(new THREE.Vector3()).toArray(), radius: box.getSize(new THREE.Vector3()).length() / 2 };
   return {
     loadMs, bounds, count: mesh.numSplats,
-    info: { version: loaded.version, moduleURL: loaded.moduleURL, peerDependencies: loaded.peerDependencies, backend: gpu ? 'WebGPU' : 'WebGL2', three: THREE.REVISION, settings: { ...Object.fromEntries(Object.keys(params).map(k => [k, gs[k]])), ...(spark ? { extended: gs.accumExtSplats, sourceType: mesh.extSplats ? 'ExtSplats' : 'PackedSplats' } : { autoStochastic: false }) }, workingColorSpace: THREE.ColorManagement.workingColorSpace, outputColorSpace: renderer.outputColorSpace },
+    info: { version: loaded.version, moduleURL: loaded.moduleURL, peerDependencies: loaded.peerDependencies, backend: gpu ? 'WebGPU' : 'WebGL2', three: THREE.REVISION, settings: { ...Object.fromEntries(Object.keys(params).map(k => [k, gs[k]])), ...(spark ? { extended: gs.accumExtSplats, sourceType: mesh.extSplats ? 'ExtSplats' : 'PackedSplats' } : {}) }, workingColorSpace: THREE.ColorManagement.workingColorSpace, outputColorSpace: renderer.outputColorSpace },
     async prepare() {
       // GSL's public update waits for its initial WebGPU compute nodes.
       if (!spark && gpu) await gs.update({ scene, camera });
@@ -111,7 +119,7 @@ async function createPlayCanvas(pc, gpu, canvas, commonCamera, url, filename, si
   const { center, halfExtents } = asset.resource.aabb;
   return {
     loadMs, count: asset.resource.numSplats, bounds: { center: [center.x, center.y, center.z], radius: halfExtents.length() },
-    info: { version: loaded.version, moduleURL: loaded.moduleURL, backend: gpu ? 'WebGPU' : 'WebGL2', settings: { ...Object.fromEntries(Object.keys(common).map(k => [k, params[k]])) }, sorting: gpu ? 'GPU' : 'CPU Worker', outputColorSpace: 'sRGB / linear tone mapping' },
+    info: { version: loaded.version, commit: loaded.commit, moduleURL: loaded.moduleURL, backend: gpu ? 'WebGPU' : 'WebGL2', settings: { ...Object.fromEntries(Object.keys(common).map(k => [k, params[k]])) }, sorting: gpu ? 'GPU' : 'CPU Worker', outputColorSpace: 'sRGB / linear tone mapping' },
     beforeDraw() {
       camera.setPosition(commonCamera.position.x, commonCamera.position.y, commonCamera.position.z);
       camera.setRotation(commonCamera.quaternion.x, commonCamera.quaternion.y, commonCamera.quaternion.z, commonCamera.quaternion.w);

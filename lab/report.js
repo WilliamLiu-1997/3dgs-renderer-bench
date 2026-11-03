@@ -83,7 +83,7 @@ export async function createReport(report) {
     }
     y += 5;
   }
-  paragraph('Green marks the lowest displayed value per metric and scenario; ties share the highlight. Values are medians across rounds. Fixed presets may produce different image quality. All backends use camera-axis depth sorting without post-processing.', 13);
+  paragraph('Green marks the lowest displayed value per metric and scenario; ties share the highlight. Values are medians across rounds. Fixed presets may produce different image quality. All backends use radial distance sorting without post-processing.', 13);
 
   heading('Test conditions');
   paragraph(`${report.environment.platform} · ${report.environment.hardwareConcurrency} logical threads · Screen ${report.environment.screen.width} × ${report.environment.screen.height} · DPR ${report.environment.screen.dpr}`, 14);
@@ -97,7 +97,7 @@ export async function createReport(report) {
 
   heading('Measurement', 100);
   paragraph('Frame time runs from the draw call to a signaled WebGL fence (fenceSync / clientWaitSync) or GPUQueue.onSubmittedWorkDone() for WebGPU. The queue comes from the standard canvas configuration. One frame is in flight. requestAnimationFrame schedules samples outside the timer. CPU submission, GPU work and synchronization overhead are included; this is not isolated GPU execution time or display latency.', 13);
-  paragraph('One backend runs at a time in a fresh iframe per round; order rotates or reverses. The draw call is renderer.render for Three.js, app.update + app.render for PlayCanvas. Camera updates are excluded. Native caching and async sorting remain active; pending worker results are not awaited. No LOD is generated. Orbit: ±45° (0.785 rad), 8 s period. Hiding the tab or resizing the window stops the test.', 13);
+  paragraph('One backend runs at a time in a fresh iframe per round; order rotates or reverses. The draw call is renderer.render for Three.js, app.update + app.render for PlayCanvas. Camera updates are excluded except Viewer pose application during its update/render cycle. Native caching and async sorting remain active; pending worker results are not awaited. No LOD is generated. Orbit: ±45° (0.785 rad), 8 s period. Hiding the tab or resizing the window stops the test.', 13);
   paragraph('Load time runs from the public loader call to its completion signal, excluding package downloads, initialization, SPZ conversion and the first visible frame. Signals vary by library. Warm-up does not force sorting to finish. Dependencies and internal parameters are unchanged. Isolated GPU execution time, sort time and GPU memory are not measured.', 13);
 
   const roundColumns = [margin, 132, 420, 525, 650, 790, 920, 1010];

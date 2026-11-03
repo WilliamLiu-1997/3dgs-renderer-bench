@@ -1,0 +1,19 @@
+{
+  "file": "WillaGlobalPoland.ply",
+  "bytes": 3414709820,
+  "splats": 14469103,
+  "sha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
+  "camera": {
+    "target": [
+      -0.01253509521484375,
+      11.724157810211182,
+      12.406075477600098
+    ],
+    "offset": [
+      0,
+      -19.96675499195834,
+      91.27659424895242
+    ]
+  },
+  "cameraBasis": "2nd to 98th percentile of centers sampled every 100 source records"
+}

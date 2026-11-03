@@ -1,11 +1,11 @@
 from pathlib import Path
-import json, statistics, csv, io, shutil, base64, datetime, math, sys
+import json, statistics, csv, io, shutil, base64, datetime, math, sys, os
 from zoneinfo import ZoneInfo
 import numpy as np
 from PIL import Image
 ROOT=Path(__file__).resolve().parent.parent
 H=ROOT/'harness'; O=ROOT/('report-preview' if '--preview' in sys.argv else 'outputs'); O.mkdir(exist_ok=True)
-R=H/'results'
+R=Path(os.environ.get('RESULTS_DIR', H/'results-current'))
 q=lambda a,p:float(np.percentile(a,p)) if len(a) else None
 mb=lambda v:v/2**20 if v is not None else None
 def cpu_memory_mib(case):
@@ -20,6 +20,10 @@ D['metrics']={
  'completionP95':'Per-run 95th percentile of the same frame-completion samples, milliseconds',
  'cpuMemoryMiB':'Sum of main + live Worker JS heaps, main + Worker ArrayBuffer/external backing storage, and Worker WASM capacity, MiB; accounting sum, not deduplicated physical memory',
  'gpuMiB':'Explicit live GPU resource capacity excluding timing-query buffers, MiB; not physical VRAM',
+ 'workerP50':'Native Worker sort execution, excluding message transfer, milliseconds',
+ 'rpcP50':'Sort Worker request-to-response time including message transfer, milliseconds',
+ 'asyncP50':'Native asynchronous sort completion; Radix includes GPU key projection/readback and Worker sort delivery, milliseconds',
+ 'gpuSortP50':'First-to-last native GPU radix pass span, milliseconds',
  'memoryAggregation':'Sum CPU components within each snapshot first, then take the maximum across sorted cases per run and median across three runs; GPU is aggregated separately'
 }
 config=json.loads((H/'config.json').read_text())
@@ -30,8 +34,8 @@ for f in files:
  d=json.loads(f.read_text())
  if d['config']!=config: raise SystemExit('Stale configuration: '+f.name)
  if d.get('failure'): print('FAILED',f.name,d['failure']);continue
- D['browser']=d['browser'];D['versions']=d['config']['versions'];D['rounds']=max(d['round'],D.get('rounds',0))
- D['runs'].append({'name':d['name'],'started':d['started'],'loadMs':d['initial']['loadMs'],'gpuInfo':d['initial']['gpuInfo'],'resolution':d['initial']['resolution'],'dpr':d['initial']['dpr'],'camera':d['initial']['camera'],'renderParameters':d['initial']['state'].get('renderParameters'),'sortRadial':d['initial']['state'].get('sortRadial'),'protocol':d['config'].get('protocol'),'motionAmplitudeDegrees':d['config']['motionAmplitudeDegrees']})
+ D['models']=config['models'];D['commits']=config.get('commits',{});D['browser']=d['browser'];D['versions']=d['config']['versions'];D['rounds']=max(d['round'],D.get('rounds',0))
+ D['runs'].append({'name':d['name'],'model':d['model'],'mode':d['mode'],'round':d['round'],'started':d['started'],'loadMs':d['initial']['loadMs'],'gpuInfo':d['initial']['gpuInfo'],'resolution':d['initial']['resolution'],'dpr':d['initial']['dpr'],'camera':d['initial']['camera'],'renderParameters':d['initial']['state'].get('renderParameters'),'sortRadial':d['initial']['state'].get('sortRadial'),'protocol':d['config'].get('protocol'),'motionAmplitudeDegrees':d['config']['motionAmplitudeDegrees'],'order':d['order']})
  for c in d['cases']:
   scenario=('close-moving' if c['moving'] else 'close') if c['angle'] else ('moving' if c['moving'] else 'static')
   row={'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'full' if c['fast'] is False else 'default','scenario':scenario,'variant':c['variant'],'n':len(c['rows']),'visibleOrActive':c['visible'],'cpuP50':q([r['cpuSubmitMs'] for r in c['rows']],50),'completionP50':q([r['completionMs'] for r in c['rows']],50),'completionP95':q([r['completionMs'] for r in c['rows']],95),'gpuMiB':mb(c['memory']['gpuBytes']),'cpuMemoryMiB':cpu_memory_mib(c),'workerP50':q([r['workerMs'] for r in c['rpc'] if r['name'].startswith('sort') and r['workerMs'] is not None],50),'asyncP50':q([j['ms'] for j in c['sortJobs']],50),'rpcP50':q([r['roundTripMs'] for r in c['rpc'] if r['name'].startswith('sort')],50)}
@@ -41,7 +45,7 @@ for f in files:
  for c in d['sort']:
   rpc=[rpc for row in c['rows'] for rpc in row['rpc'] if rpc['name'].startswith('sort')]
   jobs=[job for row in c['rows'] for job in row['sortJobs']]
-  D['sort'].append({'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'full' if c['fast'] is False else 'default','workerP50':q([r['workerMs'] for r in rpc if r['workerMs'] is not None],50),'rpcP50':q([r['roundTripMs'] for r in rpc],50),'asyncP50':q([j['ms'] for j in jobs],50),'gpuSortP50':q([sort_span(r) for r in c['rows'] if sort_span(r) is not None],50),'gpuSortPassSumP50':q([r['gpuSortMs'] for r in c['rows'] if r.get('gpuSortMs',0)>0],50),'cpuUpdateP50':q([r['updateMs'] for r in c['rows']],50),'gpuIsolation':c['gpuIsolation']})
+  D['sort'].append({'model':d['model'],'mode':d['mode'],'round':d['round'],'precision':'full' if c['fast'] is False else 'default','workerP50':q([r['workerMs'] for r in rpc if r['workerMs'] is not None],50),'rpcP50':q([r['roundTripMs'] for r in rpc],50),'asyncP50':q([j['ms'] for j in jobs],50),'gpuSortP50':q([sort_span(r) for r in c['rows'] if sort_span(r) is not None],50),'gpuSortPassSumP50':q([r['gpuSortMs'] for r in c['rows'] if r.get('gpuSortMs',0)>0],50),'cpuUpdateP50':q([r['updateMs'] for r in c['rows']],50),'gpuIsolation':c['gpuIsolation'],'measuredAt':c.get('measuredAt',d['started']),'diagnosticProtocol':c.get('protocol','native-sort-diagnostic')})
  # Pick round 1 captures for a fixed, reproducible gallery.
  if d['round']==1:
   (O/'images').mkdir(exist_ok=True)
@@ -63,8 +67,8 @@ with open(O/'benchmark-summary.csv','w',encoding='utf-8-sig',newline='') as f:
  w=csv.DictWriter(f,fieldnames=D['cases'][0].keys(),lineterminator='\n');w.writeheader();w.writerows(D['cases'])
 html=(ROOT/'tools/report_template.html').read_text();html=html.replace('__BENCHMARK_DATA__',json.dumps(D,ensure_ascii=False,separators=(',',':')).replace('</','<\\/'));(O/'3DGS-Renderer-Bench.html').write_text(html)
 print('Generated',len(D['runs']),'runs',len(D['cases']),'cases',len(D['images']),'images')
-for model in ['elevator','hotel']:
- for mode in ['spark','pc-gl','pc-gpu','supersplat','gsl-gl','gsl-gpu']:
+for model in config['models']:
+ for mode in ['spark','radix-gpu','radix-gl','gsl-gpu','gsl-gl','viewer-gpu','pc-gpu','pc-gl']:
   for precision in ['default']:
    rows=[r for r in D['cases'] if r['model']==model and r['mode']==mode and r['precision']==precision and r['scenario']=='static' and r['variant']=='sorted']
    print(model,mode,precision,'Frame Completion P50', [round(r['completionP50'],2) for r in rows])

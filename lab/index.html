@@ -15,9 +15,9 @@
     <section class="panel">
       <div class="section-title"><h2>Renderers</h2><button class="text-button" id="refresh-versions" title="Check GitHub versions and npm availability">Refresh versions</button></div>
       <p class="hint" id="version-note">Checking GitHub versions…</p>
-      <p class="hint">Rendering presets are fixed. All backends use camera-axis depth sorting without post-processing.</p>
+      <p class="hint">Rendering presets are fixed. All backends use radial distance sorting without post-processing.</p>
       <div id="package-settings"></div>
-      <details class="three-settings"><summary>Three.js version</summary><label class="version-label">Version<input id="version-three" list="versions-three" autocomplete="off"><datalist id="versions-three"></datalist></label><p class="hint">Shared by Spark and GSL. Check package compatibility when changing versions.</p></details>
+      <details class="three-settings"><summary>Three.js version</summary><label class="version-label">Version<input id="version-three" list="versions-three" autocomplete="off"><datalist id="versions-three"></datalist></label><label class="version-label">Radix Three.js version<input id="version-threeRadix" list="versions-threeRadix" autocomplete="off"><datalist id="versions-threeRadix"></datalist></label><p class="hint">Shared by Spark and GSL. Radix 0.0.1 requires Three.js r186 for WebGPU. Check package compatibility when changing versions.</p></details>
     </section>
     <section class="panel">
       <h2>Test settings</h2>
@@ -48,8 +48,8 @@
     <details class="methodology"><summary>Measurement notes</summary>
       <p>Each backend runs in a fresh iframe per round, with a shared camera and fixed pixel resolution. Test order rotates or reverses between rounds. Orbit motion is ±45° (0.785 rad) with an 8 s period. The full model is loaded; no LOD is generated.</p>
       <p>Frame time starts immediately before the draw call and ends when submitted GPU work completes. One frame is in flight. WebGL uses fenceSync / clientWaitSync; WebGPU uses GPUQueue.onSubmittedWorkDone(), via the canvas configuration. requestAnimationFrame schedules samples outside the timer. Completion includes CPU submission, GPU work and synchronization overhead; it is not isolated GPU execution time or display latency.</p>
-      <p>The timed draw call is renderer.render for Three.js, app.update + app.render for PlayCanvas. Camera updates are excluded. Async sorting keeps its native schedule; the measurement does not wait for pending worker results.</p>
-      <p>Load time runs from the public loader call to its completion signal. It excludes package downloads, initialization, SPZ conversion and the first visible frame. Completion signals vary by library; warm-up does not force asynchronous sorting to finish.</p>
+      <p>The timed draw call is renderer.render for Three.js, app.update + app.render for PlayCanvas. Camera updates are excluded except Viewer pose application during its update/render cycle. Async sorting keeps its native schedule; the measurement does not wait for pending worker results.</p>
+      <p>Load time runs from the public loader call to its completion signal. It excludes package downloads and SPZ conversion. Viewer load time includes initialization and the first ready frame; other backends report loader completion. Completion signals vary by library; warm-up does not force asynchronous sorting to finish.</p>
       <p>Only public APIs are used. Dependencies and internal parameters are unchanged. GPU execution time, sort time and GPU memory are not measured. Settings may produce different image quality. Hiding this tab or resizing the window stops the test; unfinished samples are excluded.</p>
     </details>
   </div>

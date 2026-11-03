@@ -4,7 +4,7 @@ const query=new URLSearchParams(location.search),mode=query.get('mode')||'gsl-gl
 const config=await(await fetch('/config.json')).json();
 window.phase='loading';let timer=null;
 function onDevice(device){if(!device.features.has('timestamp-query'))throw Error('GPU timestamp-query required');device.addEventListener('uncapturederror',e=>errors.push(e.error.message));timer=gpuTimer(device);return timer;}
-const adapter=mode==='supersplat'?await(await import('./dist/supersplat.js')).createSuperSplat(config,model,onDevice):mode.startsWith('pc-')?await(await import('./playcanvas-adapter.js')).createPlayCanvas(config,mode,model,onDevice):await(await import('./three-adapter.js')).createThree(config,mode,model,onDevice);
+const adapter=(mode.startsWith('radix-')||mode==='viewer-gpu')?await(await import('./dist/shared-adapter.js')).createShared(config,mode,model,onDevice):mode.startsWith('pc-')?await(await import('./playcanvas-adapter.js')).createPlayCanvas(config,mode,model,onDevice):await(await import('./three-adapter.js')).createThree(config,mode,model,onDevice);
 window.api=adapter;
 const {canvas,device,gl}=adapter;
 const ext=gl?.getExtension('EXT_disjoint_timer_query_webgl2');if(gl&&!ext)throw Error('GPU timer query not available');
@@ -39,10 +39,11 @@ window.benchmark=async({variant='sorted',fast=true,moving=false,angle=0,scale=1,
 };
 window.sortBenchmark=async({fast=true,n=16}={})=>{
  await adapter.setVariant('sorted',fast);adapter.setAuto?.(false);setView();await adapter.update();await frame();
- if(device)adapter.sortProbe?.(timer,true);
+ await adapter.sortProbe?.(timer,true);
  const rows=[];
- for(let i=0;i<n+4;i++){setView(i%2?.10:-.10);const ri=metrics.rpc.length,ji=adapter.jobs?.().length??0,start=performance.now();await adapter.update();const updateMs=performance.now()-start;const measured=await frame();if(i>=4)rows.push({updateMs,totalMs:performance.now()-start,...measured,rpc:metrics.rpc.slice(ri),sortJobs:adapter.jobs?.().slice(ji)??[]});}
- if(device)adapter.sortProbe?.(timer,false);
+ try {
+  for(let i=0;i<n+4;i++){setView(i%2?.10:-.10);const ri=metrics.rpc.length,ji=adapter.jobs?.().length??0,start=performance.now();await adapter.update();const updateMs=performance.now()-start;const measured=await frame();if(i>=4)rows.push({updateMs,totalMs:performance.now()-start,...measured,rpc:metrics.rpc.slice(ri),sortJobs:adapter.jobs?.().slice(ji)??[]});}
+ } finally { await adapter.sortProbe?.(timer,false); }
  return {fast:mode.startsWith('gsl')?fast:null,rows,gpuIsolation:mode==='gsl-gpu'?'Projection and radix are submitted as separate compute passes for this diagnostic only.':'Native pass boundaries.'};
 };
 window.captureView=async({variant='sorted',fast=true,angle=0,scale=1}={})=>{await adapter.setVariant(variant,fast);setView(angle,scale);await adapter.update();await frame();for(let i=0;i<4;i++)await frame();};

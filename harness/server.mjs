@@ -10,8 +10,10 @@ export function startServer(port=5349){return new Promise(resolve=>{
   const url=new URL(req.url,'http://localhost'),p=decodeURIComponent(url.pathname);
   res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
   if(p==='/favicon.ico'){res.writeHead(204);res.end();return;}
-  const match=p.match(/^\/models\/(elevator|hotel)\.ply$/);
-  const file=match?config.models[match[1]].path:path.resolve(root,p==='/'?'index.html':'.'+p);
+  const match=p.match(/^\/models\/([a-z0-9-]+)\.ply$/);
+  const model=match&&config.models[match[1]];
+  if(match&&!model){res.writeHead(404).end('Unknown model');return;}
+  const file=model?path.resolve(root,model.path):path.resolve(root,p==='/'?'index.html':'.'+p);
   if((!match&&!file.startsWith(root+path.sep))||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end('Not found');return;}
   const size=fs.statSync(file).size;let start=0,end=size-1,status=200;
   res.setHeader('Accept-Ranges','bytes');res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');

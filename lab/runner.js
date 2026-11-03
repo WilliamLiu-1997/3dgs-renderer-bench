@@ -55,6 +55,7 @@ async function initialize(data) {
   canvas.addEventListener('webglcontextlost', () => { if (disposed) return; fault = 'WebGL context lost. Sample discarded.'; send({ type: 'fatal', error: fault }); });
   camera = new THREE.PerspectiveCamera(45, size.width / size.height, 0.01, 10000);
   adapter = await createAdapter(BACKENDS.find(b => b.id === data.backend), data.versions, data.settings, canvas, camera, data.file, size);
+  canvas = adapter.canvas ?? canvas;
   if (!adapter.count) throw Error('No splats found. Select a valid 3DGS model.');
   if (data.pose) setPose(data.pose); else fit();
   await adapter.prepare?.();

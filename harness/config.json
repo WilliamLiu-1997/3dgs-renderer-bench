@@ -34,15 +34,35 @@
         -3,
         28
       ]
+    },
+    "willa": {
+      "name": "WillaGlobalPoland",
+      "path": "../models/WillaGlobalPoland.ply",
+      "count": 14469103,
+      "target": [
+        -0.01253509521484375,
+        11.724157810211182,
+        12.406075477600098
+      ],
+      "offset": [
+        0,
+        -19.96675499195834,
+        91.27659424895242
+      ]
     }
   },
   "versions": {
-    "gsl": "1.1.7",
-    "spark": "2.2.0",
-    "three": "0.186.1",
-    "playcanvas": "2.23.0-beta.20",
-    "supersplat": "3.4.2"
+    "gsl": "1.6.2",
+    "spark": "2.4.0",
+    "radix": "0.0.1",
+    "viewer": "1.42.0",
+    "three": "0.187.0",
+    "playcanvas": "2.24.0-beta.30",
+    "threeRadix": "0.186.1"
   },
-  "protocol": "aligned-six-backends-four-views-raw-20260927",
-  "motionAmplitudeDegrees": 45
+  "protocol": "radial-eight-backends-four-views-gsl162-radix24-pc30-20261103",
+  "motionAmplitudeDegrees": 45,
+  "commits": {
+    "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+  }
 }

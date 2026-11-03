@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "@playcanvas/splat-transform": "3.6.4",
-    "@sparkjsdev/spark": "2.2.0",
-    "gaussian-splat-lite": "1.1.7",
+    "@playcanvas/supersplat-viewer": "1.42.0",
+    "@sparkjsdev/radix": "file:vendor/sparkjsdev-radix-0.0.1.tgz",
+    "@sparkjsdev/spark": "2.4.0",
+    "gaussian-splat-lite": "1.6.2",
     "jspdf": "4.2.1",
-    "playcanvas": "2.23.0-beta.20",
-    "three": "0.186.1"
+    "playcanvas": "file:vendor/playcanvas-2.24.0-beta.30.tgz",
+    "three": "0.187.0",
+    "three-radix": "npm:three@0.186.1"
   },
   "devDependencies": {
     "esbuild": "0.25.12",
@@ -23,6 +26,9 @@
   },
   "overrides": {
     "@playcanvas/splat-transform": {
+      "playcanvas": "$playcanvas"
+    },
+    "@playcanvas/supersplat-viewer": {
       "playcanvas": "$playcanvas"
     }
   },

@@ -1,1 +1,8 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>3DGS renderer benchmark</title><style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block;width:1512px;height:982px}#status{position:fixed;left:12px;top:10px;color:white;font:13px monospace;z-index:3;pointer-events:none}</style><div id="status">Loading renderer…</div><script src="/instrument.js"></script><script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/webgpu":"/node_modules/three/build/three.webgpu.js","three/addons/":"/node_modules/three/examples/jsm/","three/tsl":"/node_modules/three/build/three.tsl.js"}}</script><script type="module" src="/client.js"></script></html>
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>3DGS renderer benchmark</title><style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block;width:1512px;height:982px}#status{position:fixed;left:12px;top:10px;color:white;font:13px monospace;z-index:3;pointer-events:none}</style><div id="status">Loading renderer…</div><script src="/instrument.js"></script><script type="module">
+const radix = new URLSearchParams(location.search).get('mode')?.startsWith('radix-');
+const base = '/node_modules/' + (radix ? 'three-radix' : 'three') + '/';
+const map = document.createElement('script'); map.type = 'importmap';
+map.textContent = JSON.stringify({ imports: { playcanvas: '/node_modules/playcanvas/build/playcanvas.mjs', 'playcanvas/scripts/': '/node_modules/playcanvas/scripts/', three: base + 'build/three.module.js', 'three/webgpu': base + 'build/three.webgpu.js', 'three/tsl': base + 'build/three.tsl.js', 'three/addons/': base + 'examples/jsm/' } });
+document.head.append(map);
+await import('./client.js');
+</script></html>

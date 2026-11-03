@@ -1,6 +1,6 @@
-import { BACKENDS, PACKAGES, PRESETS, exactVersion, aggregate, isBest } from './config.js';
+import { BACKENDS, PACKAGES, PRESETS, exactVersion, aggregate, isBest, roundOrder } from './config.js';
 const $ = id => document.getElementById(id);
-const repos = { spark: 'sparkjsdev/spark', playcanvas: 'playcanvas/engine', gsl: 'WilliamLiu-1997/Gaussian-Splat-Lite', three: 'mrdoob/three.js' };
+const repos = { spark: 'sparkjsdev/spark', radix: 'sparkjsdev/radix', viewer: 'playcanvas/supersplat-viewer', playcanvas: 'playcanvas/engine', gsl: 'WilliamLiu-1997/Gaussian-Splat-Lite', three: 'mrdoob/three.js', threeRadix: 'mrdoob/three.js' };
 const state = { file: null, source: null, pose: null, running: false, loading: false, cancelled: false, results: [], statuses: {}, report: null, frame: null, closing: null, pending: new Map(), serial: 0, conversion: null, download: null };
 const versionCatalog = {};
 let toastTimer, pdfURL, checkingVersions = false;
@@ -8,7 +8,7 @@ function toast(message) { $('toast').textContent = message; $('toast').hidden = 
 function status(message) { $('viewport-status').textContent = message; $('viewport-status').hidden = !message; }
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-for (const key of ['spark', 'gsl', 'playcanvas']) {
+for (const key of ['spark', 'radix', 'gsl', 'viewer', 'playcanvas']) {
   const pkg = PACKAGES[key], name = BACKENDS.find(b => b.lib === key).name;
   const div = document.createElement('div'); div.className = 'package-card';
   div.innerHTML = `<div class="package-title"><strong>${name}</strong><a href="https://github.com/${repos[key]}/releases" target="_blank" rel="noopener" class="text-button">GitHub</a></div><label class="version-label">Version<input id="version-${key}" value="${pkg.version}" list="versions-${key}" autocomplete="off"><datalist id="versions-${key}"><option value="${pkg.version}">Bundled${pkg.version.includes('-') ? ' prerelease' : ''}</option></datalist></label><div class="backend-options">${BACKENDS.filter(b => b.lib === key).map(b => `<label><input type="checkbox" id="enable-${b.id}" checked>${b.backend}</label>`).join('')}</div>`;
@@ -17,6 +17,7 @@ for (const key of ['spark', 'gsl', 'playcanvas']) {
 for (const backend of BACKENDS) $('preview-backend').add(new Option(`${backend.name} / ${backend.backend}`, backend.id));
 $('preview-backend').value = 'gsl-gl';
 $('version-three').value = PACKAGES.three.version;
+$('version-threeRadix').value = PACKAGES.threeRadix.version;
 
 function getConfig() {
   const versions = Object.fromEntries(Object.keys(PACKAGES).map(k => [k, $(`version-${k}`).value.trim()]));
@@ -24,7 +25,7 @@ function getConfig() {
   const parameters = structuredClone(PRESETS);
   const backends = BACKENDS.filter(b => $(`enable-${b.id}`).checked).map(b => b.id);
   const [width, height] = $('resolution').value.split('x').map(Number);
-  return { versions, versionSources: Object.fromEntries(Object.entries(versions).map(([k, v]) => [k, versionCatalog[k]?.find(entry => entry.version === v) ?? { version: v, source: 'manual / bundled' }])), parameters, size: { width, height }, rounds: +$('rounds').value, duration: +$('duration').value, warmup: +$('warmup').value, scenarios: ['static', 'moving'].filter(id => $(id).checked), backends };
+  return { versions, versionSources: Object.fromEntries(Object.entries(versions).map(([k, v]) => [k, versionCatalog[k]?.find(entry => entry.version === v) ?? { version: v, source: 'manual / bundled', ...(v === PACKAGES[k].version && PACKAGES[k].commit ? { commit: PACKAGES[k].commit, url: `https://github.com/${repos[k]}/commit/${PACKAGES[k].commit}` } : {}) }])), parameters, size: { width, height }, rounds: +$('rounds').value, duration: +$('duration').value, warmup: +$('warmup').value, scenarios: ['static', 'moving'].filter(id => $(id).checked), backends };
 }
 function updateControls() {
   const locked = state.running || state.loading;
@@ -98,7 +99,7 @@ async function openFrame(backend, config, preview) {
   frame.width = config.size.width; frame.height = config.size.height;
   state.frame = frame;
   const ready = new Promise((resolve, reject) => { const timer = setTimeout(() => settleRequest('ready', undefined, 'Renderer module timed out'), 90000); state.pending.set('ready', { resolve, reject, timer }); });
-  frame.src = `./runner.html?three=${encodeURIComponent(config.versions.three)}`;
+  frame.src = `./runner.html?three=${encodeURIComponent(backend.lib === 'radix' ? config.versions.threeRadix : config.versions.three)}&playcanvas=${encodeURIComponent(config.versions.playcanvas)}`;
   $('frame-host').append(frame); fitFrame(); $('empty-scene').hidden = true;
   $('viewport-tag').textContent = `${backend.name} · ${backend.backend} · ${config.size.width} × ${config.size.height}`;
   await ready;
@@ -208,13 +209,14 @@ async function refreshVersions() {
     const [releases, tags, commits, npm] = fetched.map(r => r.status === 'fulfilled' ? r.value : null);
     if (!npm || (!releases && !tags && !commits?.length)) throw Error(`${pkg.name} version sources are unavailable`);
     const entries = new Map();
-    const normalize = tag => key === 'three' && /^r\d+$/.test(tag) ? `0.${tag.slice(1)}.0` : tag.replace(/^v/, '');
+    const normalize = tag => key.startsWith('three') && /^r\d+$/.test(tag) ? `0.${tag.slice(1)}.0` : tag.replace(/^v/, '');
     const add = (tag, url, source) => { const version = normalize(tag); if (exactVersion(version) && npm.versions[version] && !entries.has(version)) entries.set(version, { version, url, source, checkedAt: new Date().toISOString(), publishedAt: npm.time[version] }); };
     for (const r of releases ?? []) add(r.tag_name, r.html_url, 'GitHub Release');
     for (const t of tags ?? []) add(t.name, `https://github.com/${repos[key]}/tree/${encodeURIComponent(t.name)}`, 'GitHub Tag');
     for (const c of commits ?? []) { const match = c.commit.message.split('\n')[0].match(/\b\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?/); if (match) add(match[0], c.html_url, 'GitHub version commit'); }
     // The bundled version remains usable if it has fallen outside GitHub's recent pages.
     if (!entries.has(pkg.version)) entries.set(pkg.version, { version: pkg.version, source: 'bundled', url: `https://github.com/${repos[key]}/releases` });
+    if (pkg.commit) entries.set(pkg.version, { version: pkg.version, source: 'bundled commit', commit: pkg.commit, url: `https://github.com/${repos[key]}/commit/${pkg.commit}` });
     versionCatalog[key] = [...entries.values()].sort((a, b) => Date.parse(npm.time[b.version]) - Date.parse(npm.time[a.version]));
     const list = $(`versions-${key}`); list.replaceChildren();
     for (const entry of versionCatalog[key]) { const option = document.createElement('option'); option.value = entry.version; option.label = `${entry.version.includes('-') ? 'Prerelease' : 'Release'} · ${entry.source}`; list.append(option); }
@@ -279,16 +281,17 @@ async function run() {
   document.body.classList.add('testing');
   for (const backend of BACKENDS) state.statuses[backend.id] = config.backends.includes(backend.id) ? 'Pending' : 'Not selected';
   const lockedPose = structuredClone(state.pose);
-  state.report = { schema: 'splat-lab/4', metric: 'frame-completion-ms', created: new Date().toISOString(), source: structuredClone(state.source), count: state.count, config, camera: lockedPose, environment: { userAgent: navigator.userAgent, platform: navigator.platform, hardwareConcurrency: navigator.hardwareConcurrency, deviceMemoryGiB: navigator.deviceMemory ?? null, screen: { width: screen.width, height: screen.height, dpr: devicePixelRatio }, secureContext: isSecureContext }, results: state.results, complete: false };
+  state.report = { schema: 'splat-lab/5', metric: 'frame-completion-ms', created: new Date().toISOString(), source: structuredClone(state.source), count: state.count, config, camera: lockedPose, environment: { userAgent: navigator.userAgent, platform: navigator.platform, hardwareConcurrency: navigator.hardwareConcurrency, deviceMemoryGiB: navigator.deviceMemory ?? null, screen: { width: screen.width, height: screen.height, dpr: devicePixelRatio }, secureContext: isSecureContext }, results: state.results, complete: false };
   updateControls(); renderResults(); $('progress').hidden = false; $('progress').value = 0;
   $('progress').max = config.rounds * config.backends.length * config.scenarios.length;
   let completed = 0;
   try {
     for (let round = 1; round <= config.rounds && !state.cancelled; round++) {
-      for (const id of config.backends) {
+      const order = roundOrder(config.backends, round);
+      for (const id of order) {
         if (state.cancelled) break;
         const backend = BACKENDS.find(b => b.id === id);
-        const row = { backend: id, version: config.versions[backend.lib], round, started: new Date().toISOString(), cases: [] };
+        const row = { backend: id, order, version: config.versions[backend.lib], round, started: new Date().toISOString(), cases: [] };
         state.statuses[id] = `Loading round ${round}`; renderResults(); status('Loading renderer and model…');
         $('run-heading').textContent = `${backend.name} / ${backend.backend}`;
         $('run-status').textContent = `Round ${round} / ${config.rounds} · ${(state.file.size / 1048576).toFixed(1)} MiB · Keep this tab visible`;

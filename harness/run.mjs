@@ -4,13 +4,15 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {startServer} from './server.mjs';
+import {roundOrder} from '../lab/config.js';
 import {collectHeap} from './heap.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url));process.chdir(root);
 const config=JSON.parse(fs.readFileSync('config.json'));
 const args=process.argv.slice(2),pilot=args.includes('--pilot'),roundCount=pilot?1:Number(process.env.ROUNDS||3);
-const models=args.includes('hotel')?['hotel']:args.includes('elevator')?['elevator']:['elevator','hotel'];
-const modes=args.filter(x=>['gsl-gl','gsl-gpu','spark','pc-gl','pc-gpu','supersplat'].includes(x));if(!modes.length)modes.push('spark','pc-gl','pc-gpu','supersplat','gsl-gl','gsl-gpu');
-const folder=pilot?'pilot':'results';fs.mkdirSync(folder,{recursive:true});
+const selectedModels=args.filter(x=>Object.hasOwn(config.models,x));
+const models=selectedModels.length?selectedModels:Object.keys(config.models);
+const modes=args.filter(x=>['gsl-gl','gsl-gpu','spark','radix-gpu','radix-gl','pc-gl','pc-gpu','viewer-gpu'].includes(x));if(!modes.length)modes.push('spark','radix-gpu','radix-gl','gsl-gpu','gsl-gl','viewer-gpu','pc-gpu','pc-gl');
+const folder=process.env.RESULTS_DIR||(pilot?'pilot':'results-current');fs.mkdirSync(folder,{recursive:true});
 const port=Number(process.env.PORT||5351);
 const scenarios=pilot?[{angle:0,scale:1,moving:false}]:[
  {angle:0,scale:1,moving:false},{angle:.55,scale:.65,moving:false},
@@ -19,17 +21,17 @@ const scenarios=pilot?[{angle:0,scale:1,moving:false}]:[
 const server=await startServer(port);
 function rss(pid){const lines=execFileSync('ps',['-axo','pid=,ppid=,rss=,command='],{encoding:'utf8'}).trim().split('\n').map(l=>{const m=l.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);return {pid:+m[1],ppid:+m[2],kib:+m[3],command:m[4]};});const ids=new Set([pid]);let size;do{size=ids.size;for(const p of lines)if(ids.has(p.ppid))ids.add(p.pid);}while(size!==ids.size);const all=lines.filter(p=>ids.has(p.pid));return {at:Date.now(),totalMiB:all.reduce((s,p)=>s+p.kib,0)/1024,rendererMiB:all.filter(p=>p.command.includes('--type=renderer')).reduce((s,p)=>s+p.kib,0)/1024,gpuProcessMiB:all.filter(p=>p.command.includes('--type=gpu-process')).reduce((s,p)=>s+p.kib,0)/1024};}
 let failures=0;
-const median=a=>{const s=a.filter(Number.isFinite).sort((a,b)=>a-b);return s[Math.floor(s.length/2)];};
+const median=a=>{const s=a.filter(Number.isFinite).sort((a,b)=>a-b),i=Math.floor(s.length/2);return s.length%2?s[i]:(s[i-1]+s[i])/2;};
 try{
 for(let round=1;round<=roundCount;round++)for(const model of models){
- const order=round%2===0?[...modes].reverse():[...modes.slice((round-1)%modes.length),...modes.slice(0,(round-1)%modes.length)];
+ const order=roundOrder(modes,round);
  for(const mode of order){
   const name=`${model}-${mode}-r${round}`,filename=folder+'/'+name+'.json';
   if(!pilot&&fs.existsSync(filename)){
    const previous=JSON.parse(fs.readFileSync(filename));
    if(!previous.failure&&JSON.stringify(previous.config)===JSON.stringify(config)){console.log('SKIP complete',name);continue;}
   }
-  const output={name,mode,model,round,started:new Date().toISOString(),config,consoleErrors:[],rss:[],cases:[],sort:[]};
+  const output={name,mode,model,round,order,started:new Date().toISOString(),config,consoleErrors:[],rss:[],cases:[],sort:[]};
   const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-unsafe-webgpu','--disable-gpu-vsync','--disable-frame-rate-limit','--no-proxy-server','--enable-precise-memory-info','--js-flags=--expose-gc']});
   output.browser=browser.version();let page,session;const browserSession=await browser.newBrowserCDPSession();const pid=(await browserSession.send('SystemInfo.getProcessInfo')).processInfo.find(p=>p.type==='browser').id;const poll=setInterval(()=>{try{output.rss.push(rss(pid));}catch{}},1500);
   try{
@@ -41,6 +43,8 @@ for(let round=1;round<=roundCount;round++)for(const model of models){
    await page.waitForFunction(()=>window.ready||window.errors?.length,null,{timeout:300000});
    if(!await page.evaluate(()=>window.ready))throw Error((await page.evaluate(()=>window.errors)).join('\n'));
    output.initialHeap=await collectHeap(browserSession,session);output.initial=await page.evaluate(()=>snapshot());output.initialRss=rss(pid);
+   if(mode.startsWith('radix-')&&output.initial.state.renderParameters.sortBits!==24)throw Error('Radix default 24-bit sorting required');
+   if(output.initial.state.sortRadial!==true)throw Error('Radial sorting required for every sorted backend');
    console.log('READY',name,output.initial.loadMs.toFixed(0),'ms',output.initial.state);
    const fast=true;
    for(const scenario of scenarios){
@@ -53,7 +57,7 @@ for(let round=1;round<=roundCount;round++)for(const model of models){
    console.log('SORT',name,fast,median(sort.rows.map(r=>r.gpuSortMs??r.updateMs)));
    await page.evaluate(fast=>captureView({fast}),fast);
    if(round===1)await page.screenshot({path:folder+'/'+name+'-sorted.png'});
-   const variants=(mode.startsWith('gsl')||mode==='supersplat'||mode==='pc-gpu')?['stochastic']:[];
+   const variants=(mode.startsWith('gsl')||mode==='pc-gpu')?['stochastic']:[];
    if(!pilot||args.includes('--variants')){
     for(const variant of variants){
      for(const scenario of scenarios){
