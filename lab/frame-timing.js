@@ -18,16 +18,22 @@ export function frameStatistics(frameTimes) {
 // One GPU frame in flight: a new frame is drawn only after the previous frame's GPU work has
 // completed. WebGL polls a fence with a zero timeout; WebGPU waits for onSubmittedWorkDone. A draw
 // blocked at an animation frame keeps only the latest request and runs as soon as the GPU is free.
+// WebGL polls through MessageChannel tasks, which avoid the >=4 ms clamp of nested setTimeout(0).
 export function createFrameGate({ gl, device }) {
   let fence = null,
     pending = false,
     waiting,
-    pollTimer;
-  function poll() {
-    pollTimer = undefined;
-    const draw = waiting;
-    if (gate.isReady(draw)) draw?.();
-  }
+    polling = false,
+    pollId = 0;
+  const channel = gl ? new MessageChannel() : null;
+  if (channel)
+    channel.port1.onmessage = ({ data }) => {
+      // Ignore polls cancelled or superseded since they were posted.
+      if (!polling || data !== pollId) return;
+      polling = false;
+      const draw = waiting;
+      if (gate.isReady(draw)) draw?.();
+    };
   const gate = {
     isReady(onReady) {
       if (gl?.isContextLost()) return false;
@@ -37,12 +43,14 @@ export function createFrameGate({ gl, device }) {
       }
       const ready = !pending && fence === null;
       if (ready) {
-        clearTimeout(pollTimer);
-        pollTimer = undefined;
+        polling = false;
         waiting = undefined;
       } else if (onReady) {
         waiting = onReady;
-        if (gl && pollTimer === undefined) pollTimer = setTimeout(poll, 0);
+        if (gl && !polling) {
+          polling = true;
+          channel.port2.postMessage(++pollId);
+        }
       }
       return ready;
     },
@@ -69,8 +77,10 @@ export function createFrameGate({ gl, device }) {
       );
     },
     dispose() {
-      clearTimeout(pollTimer);
-      pollTimer = waiting = undefined;
+      polling = false;
+      waiting = undefined;
+      channel?.port1.close();
+      channel?.port2.close();
       if (fence !== null) gl.deleteSync(fence);
       fence = null;
     },
