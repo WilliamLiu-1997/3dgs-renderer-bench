@@ -656,8 +656,8 @@
           <h3 data-i18n="rawGroup">Raw stochastic rendering</h3>
           <div id="rawChart" class="chart"></div>
           <p class="note" data-i18n="sceneStoch">
-            Native raw sampling, no spatial resolve or temporal accumulation. GSL keeps its 16-bit front-to-back sort;
-            PlayCanvas skips sorting. Sampling patterns differ.
+            Native raw sampling, no spatial resolve or temporal accumulation. Gaussian Splat Lite keeps its 16-bit
+            front-to-back sort; PlayCanvas skips sorting. Sampling patterns differ.
           </p>
         </div>
         <details open>
@@ -684,10 +684,10 @@
         <div id="sortTable" class="table-wrap"></div>
         <p id="sortSupplement" class="note" hidden></p>
         <p data-i18n="sortDiagnostic" class="note">
-          The radix diagnostic measures the first-to-last pass span. GSL splits projection and radix only here; Engine,
-          Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full sort per sample (GPU key
-          readback + Worker sort). Pipelines and active counts differ, so these are not equal-input algorithm
-          comparisons.
+          The radix diagnostic measures the first-to-last pass span. Gaussian Splat Lite splits projection and radix
+          only here; Engine, SuperSplat Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full
+          sort per sample (GPU key readback + Worker sort). Pipelines and active counts differ, so these are not
+          equal-input algorithm comparisons.
         </p>
       </section>
       <section>
@@ -750,8 +750,8 @@
                 </td>
                 <td>
                   <span data-i18n="radixPrec">
-                    16 fraction bits (GSL default: 15). Both encode camera distance. WebGL2 readback and Worker
-                    transfers add async latency.
+                    16 fraction bits (Gaussian Splat Lite default: 15). Both encode camera distance. WebGL2 readback and
+                    Worker transfers add async latency.
                   </span>
                 </td>
               </tr>
@@ -784,14 +784,14 @@
           </table>
         </div>
         <p data-i18n="precisionNumbers" class="note">
-          PlayCanvas and Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU sorting uses
-          16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit radix on this
-          Apple GPU).
+          PlayCanvas and SuperSplat Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU
+          sorting uses 16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit
+          radix on this Apple GPU).
         </p>
         <p data-i18n="precisionLimit" class="note">
           Nearly coincident splats may share a key, changing alpha blending; sorting is by Gaussian center, not per
-          pixel. Sorted GSL uses its default 24-bit sort; Spark uses extended encoding throughout. Raw stochastic GSL
-          uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.
+          pixel. Sorted Gaussian Splat Lite uses its default 24-bit sort; Spark uses extended encoding throughout. Raw
+          stochastic Gaussian Splat Lite uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.
         </p>
         <p class="note">
           <a href="https://github.com/sparkjsdev/spark/blob/v2.4.0/rust/spark-rs/src/sort.rs">Spark sort source</a>
@@ -860,9 +860,9 @@
           </label>
         </div>
         <p data-i18n="imageNote" class="note">
-          Fixed matching cameras, 3024 × 1964 captures; click a render for the original. GSL WebGPU blends in sRGB to
-          match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no spatial resolve
-          or temporal accumulation.
+          Fixed matching cameras, 3024 × 1964 captures; click a render for the original. Gaussian Splat Lite WebGPU
+          blends in sRGB to match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no
+          spatial resolve or temporal accumulation.
         </p>
         <div class="gallery" id="gallery"></div>
         <div id="qualityTable" class="table-wrap"></div>
@@ -898,16 +898,16 @@
           <p>
             <strong data-i18n="gslProcessingTitle">Three.js versions</strong>
             <span data-i18n="gslProcessingBody">
-              GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native
-              sorting and caching stay on.
+              Gaussian Splat Lite and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible
+              with r187). Native sorting and caching stay on.
             </span>
           </p>
           <p>
             <strong data-i18n="ssTitle">PlayCanvas Engine and rendering settings</strong>
             <span data-i18n="ssTitleBody">
-              Engine and Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255,
-              antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. GSL: minimum radius 1,
-              no maximum. Native coverage and projection may still differ.
+              Engine and SuperSplat Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward
+              1/255, antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. Gaussian Splat
+              Lite: minimum radius 1, no maximum. Native coverage and projection may still differ.
             </span>
           </p>
           <p>
@@ -928,8 +928,8 @@
           <p>
             <strong data-i18n="supportTitle">Supported features</strong>
             <span data-i18n="supportTitleBody">
-              All eight backends run sorted rendering; PlayCanvas WebGPU and both GSL backends also run raw stochastic.
-              Main and closer views are tested static and moving.
+              All eight backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run
+              raw stochastic. Main and closer views are tested static and moving.
             </span>
           </p>
         </div>
@@ -1004,8 +1004,8 @@
           'Worker 排序异步执行，GPU 排序在 GPU 命令流内执行。异步完成延迟包含准备、传输、排序与交回。每轮交替两个相机方向，预热 4 次、采样 16 次。',
         ],
         sortDiagnostic: [
-          'The radix diagnostic measures the first-to-last pass span. GSL splits projection and radix only here; Engine, Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full sort per sample (GPU key readback + Worker sort). Pipelines and active counts differ, so these are not equal-input algorithm comparisons.',
-          'Radix 诊断测量首个到最后一个 pass 的跨度。GSL 仅在此拆分投影与 radix；Engine、Viewer 与 Radix GPU 使用原生 pass 边界。Radix CPU 每个样本等待一次完整排序（GPU 键回读 + Worker 排序）。各引擎管线与有效数量不同，不是等输入的算法对比。',
+          'The radix diagnostic measures the first-to-last pass span. Gaussian Splat Lite splits projection and radix only here; Engine, SuperSplat Viewer and Radix GPU use native pass boundaries. Radix CPU waits for one full sort per sample (GPU key readback + Worker sort). Pipelines and active counts differ, so these are not equal-input algorithm comparisons.',
+          'Radix 诊断测量首个到最后一个 pass 的跨度。Gaussian Splat Lite 仅在此拆分投影与 radix；Engine、SuperSplat Viewer 与 Radix GPU 使用原生 pass 边界。Radix CPU 每个样本等待一次完整排序（GPU 键回读 + Worker 排序）。各引擎管线与有效数量不同，不是等输入的算法对比。',
         ],
         precisionTitle: ['Sorting precision, explained', '排序精度与差异'],
         precisionIntro: [
@@ -1051,12 +1051,12 @@
           '保留 15 位尾数；两个后端均按相机距离排序。WebGL2 计数表 32 MiB。',
         ],
         precisionNumbers: [
-          'PlayCanvas and Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU sorting uses 16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit radix on this Apple GPU).',
-          'PlayCanvas 与 Viewer 将距离平方位模式映射到 nearClip / 1024 至场景边界。CPU 排序用 16 位键；GPU 按有效数量选 16–20 位并向 radix 位宽取整（本机 Apple GPU 为 4 位 radix）。',
+          'PlayCanvas and SuperSplat Viewer map squared-distance bits from nearClip / 1024 to the scene bound. CPU sorting uses 16-bit keys; GPU sorting picks 16–20 bits by active count, rounded to the radix width (4-bit radix on this Apple GPU).',
+          'PlayCanvas 与 SuperSplat Viewer 将距离平方位模式映射到 nearClip / 1024 至场景边界。CPU 排序用 16 位键；GPU 按有效数量选 16–20 位并向 radix 位宽取整（本机 Apple GPU 为 4 位 radix）。',
         ],
         precisionLimit: [
-          'Nearly coincident splats may share a key, changing alpha blending; sorting is by Gaussian center, not per pixel. Sorted GSL uses its default 24-bit sort; Spark uses extended encoding throughout. Raw stochastic GSL uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.',
-          '相近的 splat 可能共用一个键而影响 alpha 混合；排序按高斯中心，并非逐像素。GSL 深度排序组用默认 24 位排序；Spark 全程使用 extended 编码。GSL 原始随机渲染用 16 位轴向从前到后排序；PlayCanvas 随机渲染不排序。',
+          'Nearly coincident splats may share a key, changing alpha blending; sorting is by Gaussian center, not per pixel. Sorted Gaussian Splat Lite uses its default 24-bit sort; Spark uses extended encoding throughout. Raw stochastic Gaussian Splat Lite uses 16-bit axial front-to-back ordering; PlayCanvas stochastic skips sorting.',
+          '相近的 splat 可能共用一个键而影响 alpha 混合；排序按高斯中心，并非逐像素。Gaussian Splat Lite 深度排序组用默认 24 位排序；Spark 全程使用 extended 编码。Gaussian Splat Lite 原始随机渲染用 16 位轴向从前到后排序；PlayCanvas 随机渲染不排序。',
         ],
         memoryTitle: ['Memory', '内存'],
         memoryMethod: [
@@ -1078,8 +1078,8 @@
         sortedImage: ['Normal sorting', '正常排序'],
         stochImage: ['Stochastic · raw', '随机透明 · 原始采样'],
         imageNote: [
-          'Fixed matching cameras, 3024 × 1964 captures; click a render for the original. GSL WebGPU blends in sRGB to match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no spatial resolve or temporal accumulation.',
-          '统一固定相机，3024 × 1964 截图，点击查看原图。GSL WebGPU 在 sRGB 空间混合，与 WebGL 一致；保留原生 SH 解码与投影。原始随机渲染不做空间 resolve 或时间累积。',
+          'Fixed matching cameras, 3024 × 1964 captures; click a render for the original. Gaussian Splat Lite WebGPU blends in sRGB to match WebGL. Native SH decoding and projection are unchanged. Raw stochastic captures use no spatial resolve or temporal accumulation.',
+          '统一固定相机，3024 × 1964 截图，点击查看原图。Gaussian Splat Lite WebGPU 在 sRGB 空间混合，与 WebGL 一致；保留原生 SH 解码与投影。原始随机渲染不做空间 resolve 或时间累积。',
         ],
         qualityNote: [
           'MAE (RGB 0–255) and PSNR compare each backend with its own sorted capture. They measure image change, not quality or ranking.',
@@ -1098,8 +1098,8 @@
         ],
         ssTitle: ['PlayCanvas Engine and rendering settings', 'PlayCanvas Engine 与渲染设置'],
         ssTitleBody: [
-          'Engine and Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255, antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. GSL: minimum radius 1, no maximum. Native coverage and projection may still differ.',
-          'Engine 与 Viewer：large 工作缓冲、minPixelSize 2、minContribution 0、alphaClipForward 1/255、antiAlias false、colorUpdateAngle 0、径向排序。Spark 与 Radix：半径 2–512。GSL：最小半径 1，无最大值。原生覆盖与投影仍可能不同。',
+          'Engine and SuperSplat Viewer: large work buffers, minPixelSize 2, minContribution 0, alphaClipForward 1/255, antiAlias false, colorUpdateAngle 0, radial sorting. Spark and Radix: radius 2–512. Gaussian Splat Lite: minimum radius 1, no maximum. Native coverage and projection may still differ.',
+          'Engine 与 SuperSplat Viewer：large 工作缓冲、minPixelSize 2、minContribution 0、alphaClipForward 1/255、antiAlias false、colorUpdateAngle 0、径向排序。Spark 与 Radix：半径 2–512。Gaussian Splat Lite：最小半径 1，无最大值。原生覆盖与投影仍可能不同。',
         ],
         cacheTitle: ['Caching and motion', '缓存与移动'],
         cacheTitleBody: [
@@ -1108,8 +1108,8 @@
         ],
         supportTitle: ['Supported features', '可用功能'],
         supportTitleBody: [
-          'All eight backends run sorted rendering; PlayCanvas WebGPU and both GSL backends also run raw stochastic. Main and closer views are tested static and moving.',
-          '八个后端均测试深度排序；PlayCanvas WebGPU 与两个 GSL 后端另测原始随机渲染。主视角与近景视角各测静止和移动。',
+          'All eight backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run raw stochastic. Main and closer views are tested static and moving.',
+          '八个后端均测试深度排序；PlayCanvas WebGPU 与两个 Gaussian Splat Lite 后端另测原始随机渲染。主视角与近景视角各测静止和移动。',
         ],
         sourcesTitle: ['Versions, data and sources', '版本、数据与来源'],
         reference: ['Layout / protocol reference', '版式 / 协议参考'],
@@ -1123,8 +1123,8 @@
         noData: ['No data for this mode.', '该模式无可用数据。'],
         perRun: ['Selected metric per run', '所选指标各轮数值'],
         sceneStoch: [
-          'Native raw sampling, no spatial resolve or temporal accumulation. GSL keeps its 16-bit front-to-back sort; PlayCanvas skips sorting. Sampling patterns differ.',
-          '原生随机采样，不做空间 resolve 或时间累积。GSL 保留 16 位从前到后排序；PlayCanvas 不排序。各引擎采样模式不同。',
+          'Native raw sampling, no spatial resolve or temporal accumulation. Gaussian Splat Lite keeps its 16-bit front-to-back sort; PlayCanvas skips sorting. Sampling patterns differ.',
+          '原生随机采样，不做空间 resolve 或时间累积。Gaussian Splat Lite 保留 16 位从前到后排序；PlayCanvas 不排序。各引擎采样模式不同。',
         ],
         sceneMoving: [
           'Real-time ±45° orbit, 8 s period; one full period sampled after a 2 s warm-up. WebGL2 sorts asynchronously in Workers; WebGPU sorts in its command stream.',
@@ -1170,8 +1170,8 @@
         ],
         gslProcessingTitle: ['Three.js versions', 'Three.js 版本'],
         gslProcessingBody: [
-          'GSL and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native sorting and caching stay on.',
-          'GSL 与 Spark 使用 Three.js r187；Radix 0.0.1 使用 r186（其 WebGPU 路径不兼容 r187）。原生排序与缓存保持开启。',
+          'Gaussian Splat Lite and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native sorting and caching stay on.',
+          'Gaussian Splat Lite 与 Spark 使用 Three.js r187；Radix 0.0.1 使用 r186（其 WebGPU 路径不兼容 r187）。原生排序与缓存保持开启。',
         ],
         editorTitle: ['SuperSplat Viewer', 'SuperSplat Viewer'],
         editorBody: [
@@ -1198,8 +1198,8 @@
           'WebGL2：GPU 排序键回读 → JavaScript Worker，11 + 13 位 radix。WebGPU：3 轮 8 位 radix。',
         ],
         radixPrec: [
-          '16 fraction bits (GSL default: 15). Both encode camera distance. WebGL2 readback and Worker transfers add async latency.',
-          '保留 16 位尾数（GSL 默认 15 位）。两者均编码相机距离。WebGL2 回读与 Worker 传输增加异步延迟。',
+          '16 fraction bits (Gaussian Splat Lite default: 15). Both encode camera distance. WebGL2 readback and Worker transfers add async latency.',
+          '保留 16 位尾数（Gaussian Splat Lite 默认 15 位）。两者均编码相机距离。WebGL2 回读与 Worker 传输增加异步延迟。',
         ],
         viewerKey: ['Engine WebGPU log-spaced squared-distance keys', 'Engine WebGPU 近似对数间距的距离平方键'],
         viewerExec: [
@@ -1368,7 +1368,7 @@
           ...new Map(DATA.runs.filter(run => run.model === s.model).map(run => [run.round, run.order])).entries(),
         ].sort((a, b) => a[0] - b[0]);
         $('provenance').innerHTML =
-          `<p class="note">Spark ${DATA.versions.spark} · Gaussian Splat Lite ${DATA.versions.gsl} · three.js ${DATA.versions.three} · PlayCanvas ${DATA.versions.playcanvas} · Viewer ${DATA.versions.viewer} · Radix ${DATA.versions.radix} (Three.js ${DATA.versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round, order]) => tr('round') + ' ' + round + ': ' + order.map(mode => names[mode]).join(' → ')).join('<br>')}</p>`;
+          `<p class="note">Spark ${DATA.versions.spark} · Gaussian Splat Lite ${DATA.versions.gsl} · three.js ${DATA.versions.three} · PlayCanvas ${DATA.versions.playcanvas} · SuperSplat Viewer ${DATA.versions.viewer} · Radix ${DATA.versions.radix} (Three.js ${DATA.versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round, order]) => tr('round') + ' ' + round + ': ' + order.map(mode => names[mode]).join(' → ')).join('<br>')}</p>`;
         $('modelCount').textContent = (DATA.models[s.model].count / 1e6).toFixed(2) + 'M';
         $('modelName').textContent = DATA.models[s.model].name + ' · SH3';
         $('roundLabel').textContent = DATA.rounds + ' ' + tr('independentRuns') + ' · ' + tr('frameSummary');

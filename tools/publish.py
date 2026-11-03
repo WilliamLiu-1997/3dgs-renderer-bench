@@ -26,7 +26,7 @@ PROTOCOL = (
     'Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating '
     'starting backend. Full original PLY/SH3 inputs, matched cameras and resolution, rendering settings adjusted '
     'as closely as possible, radial sorting in all depth-sorted groups and native caching. Every backend measures '
-    'static and moving (±45°, 8 s real-time orbit) main and closer side views; PlayCanvas WebGPU and both GSL '
+    'static and moving (±45°, 8 s real-time orbit) main and closer side views; PlayCanvas WebGPU and both Gaussian Splat Lite '
     'backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled '
     'with the lab sampler and one GPU frame in flight: each frame is submitted after the '
     'previous frame completes on the GPU; samples are intervals between submissions, FPS = frames / sampled time, '

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-03T21:00:39+11:00",
+  "generated": "2026-11-04T00:32:01+11:00",
   "frameMetric": "frame-interval-ms",
   "protocol": "radial-eight-backends-four-views-one-frame-in-flight-v3",
   "sampleSeconds": {
@@ -41,19 +41,19 @@
     {
       "id": "gsl-gpu",
       "name": "Gaussian Splat Lite · WebGPU",
-      "short": "GSL / WebGPU",
+      "short": "Gaussian Splat Lite / WebGPU",
       "color": "#7454a1"
     },
     {
       "id": "gsl-gl",
       "name": "Gaussian Splat Lite · WebGL2",
-      "short": "GSL / WebGL2",
+      "short": "Gaussian Splat Lite / WebGL2",
       "color": "#3976ae"
     },
     {
       "id": "viewer-gpu",
       "name": "SuperSplat Viewer · WebGPU",
-      "short": "Viewer / WebGPU",
+      "short": "SuperSplat Viewer / WebGPU",
       "color": "#b24b72"
     },
     {

@@ -21,9 +21,9 @@ BACKEND_STYLE = {
     'spark-gl': {'name': 'Spark · WebGL2', 'short': 'Spark / WebGL2', 'color': '#a75e2d'},
     'radix-gpu': {'name': 'Radix · WebGPU', 'short': 'Radix / WebGPU', 'color': '#b59527'},
     'radix-gl': {'name': 'Radix · WebGL2', 'short': 'Radix / WebGL2', 'color': '#6b8b9d'},
-    'gsl-gpu': {'name': 'Gaussian Splat Lite · WebGPU', 'short': 'GSL / WebGPU', 'color': '#7454a1'},
-    'gsl-gl': {'name': 'Gaussian Splat Lite · WebGL2', 'short': 'GSL / WebGL2', 'color': '#3976ae'},
-    'viewer-gpu': {'name': 'SuperSplat Viewer · WebGPU', 'short': 'Viewer / WebGPU', 'color': '#b24b72'},
+    'gsl-gpu': {'name': 'Gaussian Splat Lite · WebGPU', 'short': 'Gaussian Splat Lite / WebGPU', 'color': '#7454a1'},
+    'gsl-gl': {'name': 'Gaussian Splat Lite · WebGL2', 'short': 'Gaussian Splat Lite / WebGL2', 'color': '#3976ae'},
+    'viewer-gpu': {'name': 'SuperSplat Viewer · WebGPU', 'short': 'SuperSplat Viewer / WebGPU', 'color': '#b24b72'},
     'pc-gpu': {'name': 'PlayCanvas · WebGPU', 'short': 'PlayCanvas / WebGPU', 'color': '#558c29'},
     'pc-gl': {'name': 'PlayCanvas · WebGL2', 'short': 'PlayCanvas / WebGL2', 'color': '#287c62'},
 }

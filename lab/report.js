@@ -173,7 +173,7 @@ export async function createReport(report) {
     13,
   );
   paragraph(
-    'Load time runs from the public loader call to its completion signal (Viewer: its first ready frame), excluding package downloads and SPZ conversion. Only public APIs are used; native caching and async sorting stay active. GPU time, sort time and GPU memory are not measured. GPU errors, hiding the tab or resizing the window invalidate the run.',
+    'Load time runs from the public loader call to its completion signal (SuperSplat Viewer: its first ready frame), excluding package downloads and SPZ conversion. Only public APIs are used; native caching and async sorting stay active. GPU time, sort time and GPU memory are not measured. GPU errors, hiding the tab or resizing the window invalidate the run.',
     13,
   );
 

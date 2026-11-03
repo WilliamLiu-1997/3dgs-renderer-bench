@@ -24,7 +24,7 @@ export async function createViewerAdapter(lib, pc, canvas, commonCamera, url, fi
   const { app } = viewer;
   if (!app.graphicsDevice.isWebGPU) {
     viewer.destroy();
-    throw Error('Viewer WebGPU unavailable; fallback is disabled');
+    throw Error('SuperSplat Viewer WebGPU unavailable; fallback is disabled');
   }
   const device = app.graphicsDevice;
   canvas = device.canvas;
