@@ -51,17 +51,32 @@
         text-transform: uppercase;
       }
       h1 {
-        font-size: clamp(34px, 4.5vw, 64px);
+        font-size: 40px;
         line-height: 1.12;
         letter-spacing: -0.055em;
         margin: 15px 0 18px;
         font-weight: 650;
       }
-      h1 span {
+      .renderer-groups {
+        display: grid;
+        gap: 0.1em;
+        margin-top: 18px;
+        line-height: 1.3;
         font-weight: 400;
         color: var(--muted);
-        font-size: 0.54em;
+        font-size: 20px;
         letter-spacing: -0.03em;
+      }
+      .renderer-group {
+        display: grid;
+        grid-template-columns: 6.2em minmax(0, 1fr);
+        gap: 0.5em;
+      }
+      .renderer-group b {
+        font-weight: 600;
+      }
+      .renderer-group a {
+        white-space: nowrap;
       }
       h2 {
         font-size: 26px;
@@ -444,9 +459,6 @@
         .barvalue {
           font-size: 14px;
         }
-        h1 {
-          font-size: 40px;
-        }
         .cards {
           gap: 18px;
         }
@@ -595,25 +607,41 @@
         </div>
         <h1>
           3DGS Renderer Bench
-          <br />
-          <span>
-            <a href="https://github.com/sparkjsdev/spark" target="_blank" rel="noopener noreferrer">Spark</a>
-            ·
-            <a href="https://github.com/sparkjsdev/radix" target="_blank" rel="noopener noreferrer">Radix</a>
-            ·
-            <a href="https://github.com/playcanvas/engine" target="_blank" rel="noopener noreferrer">PlayCanvas</a>
-            ·
-            <a href="https://github.com/playcanvas/supersplat-viewer" target="_blank" rel="noopener noreferrer">
-              SuperSplat Viewer
-            </a>
-            ·
-            <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite" target="_blank" rel="noopener noreferrer">
-              Gaussian Splat Lite
-            </a>
-            ·
-            <a href="https://github.com/manycoretech/aholo-viewer" target="_blank" rel="noopener noreferrer">
-              Aholo Viewer
-            </a>
+          <span class="renderer-groups">
+            <span class="renderer-group">
+              <b>ThreeJS:</b>
+              <span>
+                <a
+                  href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Gaussian Splat Lite
+                </a>
+                ·
+                <a href="https://github.com/sparkjsdev/spark" target="_blank" rel="noopener noreferrer">Spark</a>
+                ·
+                <a href="https://github.com/sparkjsdev/radix" target="_blank" rel="noopener noreferrer">Radix</a>
+              </span>
+            </span>
+            <span class="renderer-group">
+              <b>PlayCanvas:</b>
+              <span>
+                <a href="https://github.com/playcanvas/engine" target="_blank" rel="noopener noreferrer">PlayCanvas</a>
+                ·
+                <a href="https://github.com/playcanvas/supersplat-viewer" target="_blank" rel="noopener noreferrer">
+                  SuperSplat Viewer
+                </a>
+              </span>
+            </span>
+            <span class="renderer-group">
+              <b>Other:</b>
+              <span>
+                <a href="https://github.com/manycoretech/aholo-viewer" target="_blank" rel="noopener noreferrer">
+                  Aholo Viewer
+                </a>
+              </span>
+            </span>
           </span>
         </h1>
         <p data-i18n="lede" class="lede">

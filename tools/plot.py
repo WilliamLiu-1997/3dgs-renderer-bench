@@ -45,8 +45,12 @@ def main():
         ('stochastic', 'Raw stochastic rendering', stochastic, len(backends) + 1.2),
     ]
     models = [(k, v) for k, v in data['models'].items() if any(c['model'] == k for c in data['cases'])]
-    fig, axes = plt.subplots(4, len(models), figsize=(9 * len(models), 26), squeeze=False)
-    fig.subplots_adjust(left=0.15, right=0.97, top=0.88, bottom=0.07, wspace=0.55, hspace=0.42)
+    # Add header space while preserving the charts' physical size and spacing.
+    height_scale = 26 / 28
+    fig, axes = plt.subplots(4, len(models), figsize=(9 * len(models), 28), squeeze=False)
+    fig.subplots_adjust(
+        left=0.15, right=0.97, top=0.88 * height_scale, bottom=0.07 * height_scale, wspace=0.55, hspace=0.42
+    )
     for col, (model, info) in enumerate(models):
         for row, (scenario, view) in enumerate(SCENARIOS):
             ax = axes[row, col]
@@ -110,23 +114,33 @@ def main():
     versions = data['versions']
     fig.text(
         0.045,
-        0.966,
+        0.97,
         '3DGS Renderer Bench: Gaussian Splat Lite · Spark · PlayCanvas · SuperSplat Viewer · Radix · Aholo Viewer',
         fontsize=30,
         weight='bold',
     )
+    renderer_groups = [
+        (
+            'ThreeJS:',
+            f'Gaussian Splat Lite {versions["gsl"]} · Spark {versions["spark"]} · Radix {versions["radix"]}',
+        ),
+        ('PlayCanvas:', f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]}'),
+        ('Other:', f'Aholo Viewer {versions["aholo"]}'),
+    ]
+    for i, (label, renderers) in enumerate(renderer_groups):
+        y = 0.946 - 0.013 * i
+        fig.text(0.045, y, label, fontsize=18, weight='bold', color=MUTED)
+        fig.text(0.135, y, renderers, fontsize=18, color=MUTED)
     fig.text(
         0.045,
-        0.947,
-        f'Tested {dates} ({data["testTimeZone"]}) · Gaussian Splat Lite {versions["gsl"]} · Spark {versions["spark"]} · '
-        f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]} · Radix {versions["radix"]} · '
-        f'Aholo Viewer {versions["aholo"]}',
+        0.887,
+        f'Tested {dates} ({data["testTimeZone"]})',
         fontsize=11,
         color=MUTED,
     )
     fig.text(
         0.045,
-        0.934,
+        0.874,
         'Apple M5 Pro · 16 GPU cores · 48 GiB · 3024 × 1964 physical pixels · DPR 2 · Full PLY / SH3',
         fontsize=11,
         color=MUTED,
@@ -138,7 +152,7 @@ def main():
         'Aholo Viewer sorts by view depth; the others by camera distance.',
     ]
     for i, note in enumerate(notes):
-        fig.text(0.045, 0.045 - 0.013 * i, note, fontsize=10, color=MUTED)
+        fig.text(0.045, (0.045 - 0.013 * i) * height_scale, note, fontsize=10, color=MUTED)
     for extension in ['png', 'svg']:
         fig.savefig(OUTPUTS / f'benchmark-overview.{extension}', dpi=180)
     plt.close(fig)
