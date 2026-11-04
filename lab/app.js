@@ -8,6 +8,7 @@ const repos = {
   gsl: 'WilliamLiu-1997/Gaussian-Splat-Lite',
   three: 'mrdoob/three.js',
   threeRadix: 'mrdoob/three.js',
+  aholo: 'manycoretech/aholo-viewer',
 };
 const state = {
   file: null,
@@ -45,7 +46,7 @@ function status(message) {
 const escape = value =>
   String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-for (const key of ['spark', 'radix', 'gsl', 'viewer', 'playcanvas']) {
+for (const key of ['spark', 'radix', 'gsl', 'viewer', 'playcanvas', 'aholo']) {
   const pkg = PACKAGES[key],
     name = BACKENDS.find(b => b.lib === key).name;
   const div = document.createElement('div');

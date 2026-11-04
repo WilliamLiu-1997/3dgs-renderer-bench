@@ -54,20 +54,20 @@
       "sha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
       "camera": {
         "target": [
-          -0.01253509521484375,
-          11.724157810211182,
-          12.406075477600098
+          7.5,
+          14,
+          12.5
         ],
         "offset": [
-          0,
-          -19.96675499195834,
-          91.27659424895242
+          15,
+          -15,
+          30
         ]
       }
     }
   ],
   "config": {
-    "protocol": "radial-eight-backends-four-views-one-frame-in-flight-v3",
+    "protocol": "nine-backends-four-views-one-frame-in-flight-v5",
     "logicalWidth": 1512,
     "logicalHeight": 982,
     "dpr": 2,
@@ -81,7 +81,8 @@
       "gsl-gl",
       "viewer-gpu",
       "pc-gpu",
-      "pc-gl"
+      "pc-gl",
+      "aholo-gl"
     ],
     "stochasticBackends": [
       "gsl-gpu",
@@ -109,7 +110,11 @@
           10.0575225395,
           -6.7050150264,
           -18.4387913225
-        ]
+        ],
+        "secondView": {
+          "angle": 0.55,
+          "scale": 0.65
+        }
       },
       "hotel": {
         "name": "HotelFareza",
@@ -124,22 +129,38 @@
           3,
           -3,
           28
-        ]
+        ],
+        "secondView": {
+          "angle": 0.55,
+          "scale": 0.65
+        }
       },
       "willa": {
         "name": "WillaGlobalPoland",
         "path": "../models/WillaGlobalPoland.ply",
         "count": 14469103,
         "target": [
-          -0.01253509521484375,
-          11.724157810211182,
-          12.406075477600098
+          7.5,
+          14,
+          12.5
         ],
         "offset": [
-          0,
-          -19.96675499195834,
-          91.27659424895242
-        ]
+          15,
+          -15,
+          30
+        ],
+        "secondView": {
+          "target": [
+            7.7,
+            15,
+            10.8
+          ],
+          "offset": [
+            -13.2,
+            -11.5,
+            -40.4
+          ]
+        }
       }
     },
     "versions": {
@@ -149,15 +170,17 @@
       "viewer": "1.42.0",
       "three": "0.187.0",
       "playcanvas": "2.24.0-beta.30",
-      "threeRadix": "0.186.1"
+      "threeRadix": "0.186.1",
+      "aholo": "1.12.0"
     },
     "commits": {
       "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
     }
   },
-  "protocol": "Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating starting backend. Full original PLY/SH3 inputs, matched cameras and resolution, rendering settings adjusted as closely as possible, radial sorting in all depth-sorted groups and native caching. Every backend measures static and moving (±45°, 8 s real-time orbit) main and closer side views; PlayCanvas WebGPU and both Gaussian Splat Lite backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled with the lab sampler and one GPU frame in flight: each frame is submitted after the previous frame completes on the GPU; samples are intervals between submissions, FPS = frames / sampled time, with P50/P95 frame intervals. Sort latency uses a separate diagnostic with explicit completion. Memory records post-GC main and live Worker V8 heaps, external backing and WASM capacity.",
+  "protocol": "Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating starting backend. Full original PLY/SH3 inputs, matched cameras and resolution, rendering settings adjusted as closely as possible, radial sorting in all depth-sorted groups except Aholo Viewer (view depth only) and native caching. Every backend measures static and moving (±45°, 8 s real-time orbit) main and second views (a closer side view; WillaGlobalPoland: its entrance side); PlayCanvas WebGPU and both Gaussian Splat Lite backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled with the lab sampler and one GPU frame in flight: each frame is submitted after the previous frame completes on the GPU; samples are intervals between submissions, FPS = frames / sampled time, with P50/P95 frame intervals. Sort latency uses a separate diagnostic with explicit completion. Memory records post-GC main and live Worker V8 heaps, external backing and WASM capacity.",
   "testDates": [
-    "2026-11-03"
+    "2026-11-04",
+    "2026-11-05"
   ],
   "testTimeZone": "Australia/Sydney",
   "browser": [

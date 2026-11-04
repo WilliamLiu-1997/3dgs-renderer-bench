@@ -30,7 +30,6 @@ backends = config['backends']
 variants_for = {
     mode: ['sorted', 'stochastic'] if mode in config['stochasticBackends'] else ['sorted'] for mode in backends
 }
-views = [(0, 1), (0.55, 0.65)]
 
 
 def round_order(base, round):
@@ -96,8 +95,8 @@ def check_case(name, mode, case, parameters):
 
     # Rendering state.
     assert state['stochastic'] == (case['variant'] == 'stochastic'), name
-    assert state['sortRadial'] is True, name
-    assert all(state['renderParameters'][k] == v for k, v in parameters.items()), name
+    assert state['sortRadial'] is (not mode.startswith('aholo-')), name
+    assert matches(state['renderParameters'], parameters), name
     if mode.startswith('gsl'):
         assert state['spatialResolve'] is False, name
         assert state['fastSort'] is True and case['fast'] is True, name
@@ -109,6 +108,15 @@ def check_case(name, mode, case, parameters):
     return len(rows)
 
 
+def matches(actual, expected):
+    """Expected settings, recursing into groups; floats may differ by rounding across languages."""
+    if isinstance(expected, dict):
+        return isinstance(actual, dict) and all(k in actual and matches(actual[k], v) for k, v in expected.items())
+    if isinstance(expected, float):
+        return math.isclose(actual, expected, rel_tol=1e-12)
+    return actual == expected
+
+
 def check_sort(name, mode, run, sort):
     if sort.get('protocol') == 'radix-sort-diagnostic-v1':
         assert mode.startswith('radix-') and sort['browser'] == run['browser'] and sort['warmupSamples'] == 4, name
@@ -118,7 +126,9 @@ def check_sort(name, mode, run, sort):
         assert sort['fast'] is True, name
     assert len(sort['rows']) == 16, name
     for row in sort['rows']:
-        if mode in ['spark-gl', 'gsl-gl', 'pc-gl', 'radix-gl']:
+        if mode == 'aholo-gl':
+            assert row['sortJobs'] and all(j['ms'] > 0 for j in row['sortJobs']), name
+        elif mode in ['spark-gl', 'gsl-gl', 'pc-gl', 'radix-gl']:
             calls = [r for r in row['rpc'] if r['name'].startswith('sort')]
             assert calls and all(r['workerMs'] > 0 for r in calls), name
             assert row['sortJobs'] and all(j['ms'] > 0 for j in row['sortJobs']), name
@@ -136,9 +146,9 @@ def check_run(name, run):
     assert initial['resolution'] == [config['width'], config['height']] and initial['dpr'] == config['dpr'], name
     assert state['sourceCount'] == config['models'][run['model']]['count'] and state['sh'] == 3, name
     assert len(run['order']) == len(set(run['order'])) and mode in run['order'], name
-    assert state['sortRadial'] is True, name
+    assert state['sortRadial'] is (not mode.startswith('aholo-')), name
     parameters = expected_parameters(mode)
-    assert all(state['renderParameters'][k] == v for k, v in parameters.items()), name
+    assert matches(state['renderParameters'], parameters), name
     camera = config['models'][run['model']]
     assert initial['camera']['position'] == [a + b for a, b in zip(camera['target'], camera['offset'], strict=True)], (
         name
@@ -151,13 +161,18 @@ def check_run(name, run):
     if mode == 'viewer-gpu':
         assert state['engineVersion'] == config['versions']['playcanvas'], name
         assert state['engineCommit'] == config['commits']['playcanvas'], name
-    if mode == 'gsl-gpu':
+    if mode == 'gsl-gpu' or mode.startswith('radix-'):
         assert state['workingColorSpace'] == 'srgb' and state['outputColorSpace'] == 'srgb', name
+    if mode == 'gsl-gpu':
         assert state['deviceConfiguration'] == 'three-default', name
         assert 'timestamp-query' in state['deviceFeatures'], name
         assert state['compatibilityMode'] == ('core-features-and-limits' not in state['deviceFeatures']), name
-    expected_cases = {(v, m, a, s) for v in variants_for[mode] for m in [False, True] for a, s in views}
-    assert {(c['variant'], c['moving'], c['angle'], c['scale']) for c in run['cases']} == expected_cases, name
+    expected_cases = {(v, m, view) for v in variants_for[mode] for m in [False, True] for view in ['main', 'second']}
+    assert {(c['variant'], c['moving'], c['view']) for c in run['cases']} == expected_cases, name
+    second = {'angle': 0, 'scale': 1, **camera['secondView']}
+    for case in run['cases']:
+        view = second if case['view'] == 'second' else {'angle': 0, 'scale': 1}
+        assert (case['angle'], case['scale']) == (view['angle'], view['scale']), name
     assert len(run['cases']) == len(expected_cases) and len(run['sort']) == 1, name
     frames = sum(check_case(name, mode, case, parameters) for case in run['cases'])
     for sort in run['sort']:
@@ -167,7 +182,7 @@ def check_run(name, run):
 
 frames = groups = sort_groups = 0
 browsers, test_dates = set(), set()
-initial_orders, execution, sort_execution = {}, [], []
+initial_orders, execution, sort_execution, retried = {}, [], [], set()
 for name in sorted(actual):
     run = json.loads((folder / (name + '.json')).read_text())
     frames += check_run(name, run)
@@ -175,11 +190,14 @@ for name in sorted(actual):
     sort_groups += len(run['sort'])
     browsers.add(run['browser'])
     test_dates.add(datetime.datetime.fromisoformat(run['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat())
-    execution.append((run['started'], run['round'], run['model'], run['mode']))
+    if not run.get('retry'):
+        execution.append((run['started'], run['round'], run['model'], run['mode']))
+    else:
+        retried.add((run['round'], run['model'], run['mode']))
     sort_execution.extend(
         (s['measuredAt'], run['round'], run['model'], run['mode'])
         for s in run['sort']
-        if s.get('protocol') == 'radix-sort-diagnostic-v1'
+        if s.get('protocol') == 'radix-sort-diagnostic-v1' and not run.get('retry')
     )
     # Every round derives its order from round one's order for the same model.
     model = run['model']
@@ -195,6 +213,7 @@ if not partial:
         for model in config['models']
         if model in models
         for mode in round_order(initial_orders[model], r)
+        if (r, model, mode) not in retried
     ]
     assert all(set(initial_orders[m]) == set(backends) for m in models)
     assert [entry[1:] for entry in sorted(execution)] == expected_execution, (

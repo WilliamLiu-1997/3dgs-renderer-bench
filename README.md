@@ -10,10 +10,10 @@ The benchmark uses GSL 1.6.2, Spark 2.4.0, Radix 0.0.1, SuperSplat Viewer 1.42.0
 
 - Eight backends: Spark WebGL2; Radix WebGL2/WebGPU; GSL WebGL2/WebGPU; SuperSplat Viewer WebGPU; PlayCanvas Engine WebGL2/WebGPU.
 - Full original PLY inputs with SH3 and no generated LOD hierarchy: Elevator (2,796,503), HotelFareza (12,202,010), WillaGlobalPoland (14,469,103 splats).
-- Shared cameras, radial sorting, resolution, background and aligned size/blur/alpha settings. Native projection, culling, precision and caching still differ; exact settings are recorded per run.
+- Shared cameras, radial sorting (Aholo Viewer: view depth only), resolution, background and aligned size/blur/alpha settings. Native projection, culling, precision and caching still differ; exact settings are recorded per run.
 - MacBook Pro 14, Apple M5 Pro (16 GPU cores), 48 GiB unified memory, macOS 26.7, Chrome 156. Canvas: 1512 × 982 CSS pixels, DPR 2, **3024 × 1964 physical pixels**.
-- Three independent runs per model/backend: **72 runs and 396 performance groups**. Each round runs every backend once per model, then reverses the order for the next round and rotates the starting backend for the following pair. Real start timestamps are checked against this schedule.
-- All eight backends measure static (5 s) and moving (8 s, ±45° orbit) versions of both the main and closer side views after a 2 s warm-up. Additional raw stochastic cases compare PlayCanvas WebGPU and both GSL backends; GSL retains default 16-bit front-to-back stochastic sorting. Spatial resolve and temporal accumulation are off. Sorted and stochastic results have separate winners.
+- Three independent runs per model/backend: **81 runs and 432 performance groups**. Each round runs every backend once per model, then reverses the order for the next round and rotates the starting backend for the following pair. Real start timestamps are checked against this schedule.
+- All nine backends measure static (5 s) and moving (8 s, ±45° orbit) versions of both the main and second views (a closer side view; the entrance side for WillaGlobalPoland) after a 2 s warm-up. Additional raw stochastic cases compare PlayCanvas WebGPU and both GSL backends; GSL retains default 16-bit front-to-back stochastic sorting. Spatial resolve and temporal accumulation are off. Sorted and stochastic results have separate winners.
 - Test dates are derived from raw run timestamps (Australia/Sydney) and recorded in `report/input-manifest.json`.
 
 ## How frames are measured
@@ -43,11 +43,11 @@ Sorting latency, combined JS heap + ArrayBuffer + WASM and explicit GPU allocati
 
 Open `report/3DGS-Renderer-Bench.html`. It includes English/Chinese controls, per-round comparisons and embedded screenshot previews; original captures link to `harness/results/`. No model files are required to read the report.
 
-`report/benchmark-data.json` and `report/benchmark-summary.csv` contain summary measurements; `report/validation.json` records the completed checks. `harness/results/` contains the 72 raw run JSON files and round-one captures.
+`report/benchmark-data.json` and `report/benchmark-summary.csv` contain summary measurements; `report/validation.json` records the completed checks. `harness/results/` contains the 81 raw run JSON files and round-one captures.
 
 ## Test your own model
 
-Open the [browser lab](https://3dgs-renderer-bench.vercel.app/test/) to compare Spark, Radix, SuperSplat Viewer, PlayCanvas and GSL across eight backends on a PLY or SPZ. Drop a local file or enter a direct HTTP(S) `.ply`/`.spz` URL with CORS enabled. Files stay in the browser; SPZ is converted to a shared PLY before testing. Downloads happen once, before renderer loading, and are timed separately.
+Open the [browser lab](https://3dgs-renderer-bench.vercel.app/test/) to compare Spark, Radix, SuperSplat Viewer, PlayCanvas, GSL and Aholo Viewer across nine backends on a PLY or SPZ. Drop a local file or enter a direct HTTP(S) `.ply`/`.spz` URL with CORS enabled. Files stay in the browser; SPZ is converted to a shared PLY before testing. Downloads happen once, before renderer loading, and are timed separately.
 
 Choose versions, camera, resolution and sampling settings; run sequentially and export JSON/PDF with screenshots. Results show FPS and P50/P95 frame intervals for both static and orbit runs. Match the model, camera, physical resolution and browser settings when comparing results.
 
@@ -77,7 +77,7 @@ npm run bench
 
 Completed results with the current protocol are skipped. New data goes to `harness/results-current` (`RESULTS_DIR` overrides it). The runner manages its own server on port 5351, configurable through `PORT`.
 
-Backend IDs are `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`. For example, `node harness/run.mjs hotel pc-gl pc-gpu`; `ROUNDS=1` selects a diagnostic round. Full validation expects three rounds across all three models and eight backends.
+Backend IDs are `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`, `aholo-gl`. For example, `node harness/run.mjs hotel pc-gl pc-gpu`; `ROUNDS=1` selects a diagnostic round. Full validation expects three rounds across all three models and nine backends.
 
 ## Regenerate the report
 

@@ -13,8 +13,8 @@ INK, MUTED, LINE, BACKGROUND, BEST = '#182327', '#657071', '#d4d8d2', '#f6f5f1',
 SCENARIOS = [
     ('moving', 'Moving · main view'),
     ('static', 'Static · main view'),
-    ('close-moving', 'Moving · closer side view'),
-    ('close', 'Static · closer side view'),
+    ('close-moving', 'Moving · second view'),
+    ('close', 'Static · second view'),
 ]
 
 
@@ -108,12 +108,19 @@ def main():
                 )
     dates = ' – '.join(dict.fromkeys([data['testDates'][0], data['testDates'][-1]]))
     versions = data['versions']
-    fig.text(0.045, 0.966, '3DGS Renderer Bench', fontsize=30, weight='bold')
+    fig.text(
+        0.045,
+        0.966,
+        '3DGS Renderer Bench: Gaussian Splat Lite · Spark · PlayCanvas · SuperSplat Viewer · Radix · Aholo Viewer',
+        fontsize=30,
+        weight='bold',
+    )
     fig.text(
         0.045,
         0.947,
         f'Tested {dates} ({data["testTimeZone"]}) · Gaussian Splat Lite {versions["gsl"]} · Spark {versions["spark"]} · '
-        f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]} · Radix {versions["radix"]}',
+        f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]} · Radix {versions["radix"]} · '
+        f'Aholo Viewer {versions["aholo"]}',
         fontsize=11,
         color=MUTED,
     )
@@ -127,7 +134,8 @@ def main():
     notes = [
         'Median of independent runs; whiskers show run min/max. One GPU frame in flight. Sorted and raw stochastic groups have separate winners.',
         'Aligned rendering presets; real-time orbit ±45° / 8 s. Raw stochastic: no spatial resolve or temporal accumulation.',
-        'Gaussian Splat Lite retains default 16-bit front-to-back stochastic sorting. PlayCanvas raw stochastic skips depth sorting.',
+        'Gaussian Splat Lite retains default 16-bit front-to-back stochastic sorting. PlayCanvas raw stochastic skips depth sorting. '
+        'Aholo Viewer sorts by view depth; the others by camera distance.',
     ]
     for i, note in enumerate(notes):
         fig.text(0.045, 0.045 - 0.013 * i, note, fontsize=10, color=MUTED)

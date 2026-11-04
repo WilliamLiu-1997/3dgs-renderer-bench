@@ -20,7 +20,7 @@ function onDevice(device) {
 }
 
 async function createAdapter() {
-  if (mode.startsWith('radix-') || mode === 'viewer-gpu')
+  if (mode.startsWith('radix-') || mode.startsWith('aholo-') || mode === 'viewer-gpu')
     return (await import('./shared-adapter.js')).createShared(config, mode, model, onDevice);
   if (mode.startsWith('pc-'))
     return (await import('./playcanvas-adapter.js')).createPlayCanvas(config, mode, model, onDevice);
@@ -45,11 +45,23 @@ if (gl) {
 // All renderers receive the same world-space pose from this helper camera.
 const viewCamera = new THREE.PerspectiveCamera(45, config.width / config.height, 0.1, 3000);
 viewCamera.up.set(0, -1, 0);
-const target = new THREE.Vector3(...config.models[model].target);
-const offset = new THREE.Vector3(...config.models[model].offset);
+// The second view either orbits and scales the main offset or sets its own target and offset.
+const { target: mainTarget, offset: mainOffset, secondView } = config.models[model];
+const views = {
+  main: { target: mainTarget, offset: mainOffset, angle: 0, scale: 1 },
+  second: { target: mainTarget, offset: mainOffset, angle: 0, scale: 1, ...secondView },
+};
+const target = new THREE.Vector3();
 const orbitAxis = new THREE.Vector3(0, 1, 0);
-function setView(angle = 0, scale = 1) {
-  viewCamera.position.copy(offset).multiplyScalar(scale).applyAxisAngle(orbitAxis, angle).add(target);
+// `turn` adds an orbit about the view's target (motion and sorting probes).
+function setView(view = 'main', turn = 0) {
+  const { target: center, offset, angle, scale } = views[view];
+  target.fromArray(center);
+  viewCamera.position
+    .fromArray(offset)
+    .multiplyScalar(scale)
+    .applyAxisAngle(orbitAxis, angle + turn)
+    .add(target);
   viewCamera.lookAt(target);
   viewCamera.updateMatrixWorld();
   adapter.setView(viewCamera.position.toArray(), viewCamera.quaternion.toArray());
@@ -106,15 +118,15 @@ window.benchmark = ({
   variant = 'sorted',
   fast = true,
   moving = false,
-  angle = 0,
-  scale = 1,
+  view = 'main',
   warmup = config.warmupSeconds,
   duration = config.sampleSeconds[moving ? 'moving' : 'static'],
 } = {}) =>
   withValidation(async () => {
     window.phase = `${variant} ${moving ? 'moving' : 'static'}`;
     await adapter.setVariant(variant, fast);
-    setView(angle, scale);
+    const { angle, scale } = views[view];
+    setView(view);
     await adapter.update();
     await waitForGpu({ gl, device });
     let rpcStart, jobStart;
@@ -133,7 +145,7 @@ window.benchmark = ({
         },
         draw({ seconds, dt }) {
           const motion = moving ? orbitAngle(seconds, config.motionAmplitudeDegrees, config.motionPeriodSeconds) : 0;
-          setView(angle - motion, scale);
+          setView(view, -motion);
           const start = performance.now();
           adapter.draw(dt);
           return { cpuSubmitMs: performance.now() - start, cameraAngle: angle - motion, motionSeconds: seconds };
@@ -151,6 +163,7 @@ window.benchmark = ({
         motionPeriodSeconds: config.motionPeriodSeconds,
         fast: mode.startsWith('gsl') ? fast : null,
         moving,
+        view,
         angle,
         scale,
         rpc: metrics.rpc.slice(rpcStart),
@@ -176,7 +189,7 @@ window.sortBenchmark = async ({ fast = true, n = 16, warmupSamples = 4 } = {}) =
   try {
     await withValidation(async () => {
       for (let i = 0; i < n + warmupSamples; i++) {
-        setView(i % 2 ? 0.1 : -0.1);
+        setView('main', i % 2 ? 0.1 : -0.1);
         const rpcStart = metrics.rpc.length;
         const jobStart = adapter.jobs?.().length ?? 0;
         const start = performance.now();
@@ -206,9 +219,9 @@ window.sortBenchmark = async ({ fast = true, n = 16, warmupSamples = 4 } = {}) =
   };
 };
 
-window.captureView = async ({ variant = 'sorted', fast = true, angle = 0, scale = 1 } = {}) => {
+window.captureView = async ({ variant = 'sorted', fast = true, view = 'main' } = {}) => {
   await adapter.setVariant(variant, fast);
-  setView(angle, scale);
+  setView(view);
   await adapter.update();
   for (let i = 0; i < 5; i++) await completedFrame();
 };

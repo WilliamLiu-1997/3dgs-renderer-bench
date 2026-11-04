@@ -5,15 +5,27 @@
   "sha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
   "camera": {
     "target": [
-      -0.01253509521484375,
-      11.724157810211182,
-      12.406075477600098
+      7.5,
+      14,
+      12.5
     ],
     "offset": [
-      0,
-      -19.96675499195834,
-      91.27659424895242
-    ]
+      15,
+      -15,
+      30
+    ],
+    "secondView": {
+      "target": [
+        7.7,
+        15,
+        10.8
+      ],
+      "offset": [
+        -13.2,
+        -11.5,
+        -40.4
+      ]
+    }
   },
-  "cameraBasis": "2nd to 98th percentile of centers sampled every 100 source records"
+  "cameraBasis": "Main view: the main building, framed like the HotelFareza view. Second view: the entrance side."
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createRadix } from './radix-adapter.js';
 import { createViewerAdapter } from './viewer-adapter.js';
+import { createAholo } from './aholo-adapter.js';
 import { PACKAGES, exactVersion } from './config.js';
 
 export async function loadLibrary(key, version) {
@@ -44,6 +45,7 @@ export async function createAdapter(backend, versions, settings, canvas, camera,
   try {
     if (backend.lib === 'radix')
       return await createRadix(lib, gpu, canvas, camera, url, file.name, size, settings, loaded);
+    if (backend.lib === 'aholo') return await createAholo(lib, canvas, camera, url, file.name, size, settings, loaded);
     if (backend.lib === 'viewer') {
       const { lib: pc } = await loadLibrary('playcanvas', versions.playcanvas);
       return await createViewerAdapter(lib, pc, canvas, camera, url, file.name, size, settings, loaded);

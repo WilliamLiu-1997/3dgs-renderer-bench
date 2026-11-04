@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 
 export async function createRadix(lib, gpu, canvas, camera, url, filename, size, settings, loaded) {
-  THREE.ColorManagement.workingColorSpace = gpu ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
+  // Radix blends in linear space through a framebuffer target whenever the working space differs from the
+  // sRGB output; keep both sRGB so WebGPU and WebGL2 blend in sRGB like the other renderers.
+  THREE.ColorManagement.workingColorSpace = THREE.SRGBColorSpace;
   const renderer = await lib.createRenderer({
     canvas,
     backend: gpu ? 'webgpu' : 'webgpu-gl',

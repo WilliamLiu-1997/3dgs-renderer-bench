@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { median, roundOrder } from '../lab/config.js';
 import { collectHeap } from './heap.mjs';
 import { startServer } from './server.mjs';
@@ -26,14 +26,10 @@ if (unknown.length) throw Error(`Unknown model or backend: ${unknown.join(', ')}
 const folder = path.resolve(harness, process.env.RESULTS_DIR || (pilot ? 'pilot' : 'results-current'));
 fs.mkdirSync(folder, { recursive: true });
 const port = Number(process.env.PORT || 5351);
-// Main view and a closer side view, each static and orbiting.
-const views = [
-  { angle: 0, scale: 1 },
-  { angle: 0.55, scale: 0.65 },
-];
+// Main and second views (config.json `secondView`), each static and orbiting.
 const scenarios = pilot
-  ? [{ ...views[0], moving: false }]
-  : [false, true].flatMap(moving => views.map(view => ({ ...view, moving })));
+  ? [{ view: 'main', moving: false }]
+  : [false, true].flatMap(moving => ['main', 'second'].map(view => ({ view, moving })));
 const sampling = moving =>
   pilot
     ? { warmup: config.warmupSeconds, duration: 0.5 }
@@ -127,7 +123,9 @@ async function measureRun(output, round) {
     const { state } = output.initial;
     if (mode.startsWith('radix-') && state.renderParameters.sortBits !== 24)
       throw Error('Radix default 24-bit sorting required');
-    if (state.sortRadial !== true) throw Error('Radial sorting required for every sorted backend');
+    // Aholo Viewer only sorts by view depth.
+    if (state.sortRadial !== !mode.startsWith('aholo-'))
+      throw Error('Radial sorting required for every sorted backend');
     console.log('READY', output.name, output.initial.loadMs.toFixed(0), 'ms', state);
 
     const fast = true;
@@ -145,7 +143,7 @@ async function measureRun(output, round) {
           output.name,
           variant,
           scenario.moving ? 'moving' : 'static',
-          `view${scenario.angle}`,
+          scenario.view,
           describe(result),
         );
       }
@@ -179,37 +177,103 @@ async function measureRun(output, round) {
   }
 }
 
+// macOS starts idle-time maintenance (media analysis, Photos indexing, Messages) on an idle Mac on AC power,
+// which slowed GPU-bound runs by up to 30% for 15-25 minutes. On macOS, keep the system awake and the user
+// marked active. Other platforms skip this; keep their power and maintenance settings from interfering.
+if (process.platform === 'darwin') {
+  const caffeinate = args =>
+    spawn('caffeinate', args, { stdio: 'ignore' })
+      .on('error', () => {})
+      .unref();
+  caffeinate(['-i', '-w', String(process.pid)]);
+  caffeinate(['-u', '-t', '1']);
+  setInterval(() => caffeinate(['-u', '-t', '1']), 30_000).unref();
+}
+// Every 20 s, the five busiest other processes, to explain outliers. Skipped where `ps` is unavailable.
+const activityLog = path.join(folder, 'activity.log');
+const logActivity = setInterval(() => {
+  try {
+    const busiest = execFileSync('ps', ['-Ao', 'pcpu=,comm='], { encoding: 'utf8' })
+      .split('\n')
+      .map(line => line.trim().match(/^([\d.]+)\s+(.*)$/))
+      .filter(match => match && !/chrome/i.test(match[2]))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([, cpu, command]) => `${cpu} ${path.basename(command)}`);
+    fs.appendFileSync(activityLog, `${new Date().toISOString()} ${busiest.join(' | ')}\n`);
+  } catch {
+    clearInterval(logActivity);
+  }
+}, 20_000).unref();
 const server = await startServer(port);
 let failures = 0;
+async function run(model, mode, round, order, retry) {
+  const name = `${model}-${mode}-r${round}`;
+  const output = {
+    name,
+    mode,
+    model,
+    round,
+    order,
+    started: new Date().toISOString(),
+    config,
+    ...(retry && { retry }),
+    consoleErrors: [],
+    rss: [],
+    cases: [],
+    sort: [],
+  };
+  await measureRun(output, round);
+  if (output.failure) failures++;
+  fs.writeFileSync(path.join(folder, name + '.json'), JSON.stringify(output, null, 2));
+  console.log('DONE', name);
+}
+
+// Runs with any case more than RETRY_PERCENT off the median FPS of its rounds. Each run is retried at most
+// once; the disturbed original is kept in outliers/ and the retry records why it was rerun.
+const retryPercent = Number(process.env.RETRY_PERCENT || 3);
+function outliers() {
+  const found = [];
+  for (const model of models)
+    for (const mode of modes) {
+      const runs = Array.from({ length: roundCount }, (_, i) =>
+        JSON.parse(fs.readFileSync(path.join(folder, `${model}-${mode}-r${i + 1}.json`))),
+      );
+      if (runs.some(r => r.failure)) continue;
+      for (const r of runs) {
+        if (r.retry) continue;
+        const deviations = r.cases.map((c, i) => {
+          const fps = median(runs.map(other => other.cases[i].fps));
+          return (100 * (c.fps - fps)) / fps;
+        });
+        const worst = deviations.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0);
+        if (Math.abs(worst) > retryPercent) found.push({ model, mode, round: r.round, order: r.order, worst });
+      }
+    }
+  return found;
+}
+
 try {
   for (let round = 1; round <= roundCount; round++) {
     for (const model of models) {
       const order = roundOrder(modes, round);
       for (const mode of order) {
         const name = `${model}-${mode}-r${round}`;
-        const filename = path.join(folder, name + '.json');
-        if (isComplete(filename)) {
+        if (isComplete(path.join(folder, name + '.json'))) {
           console.log('SKIP complete', name);
           continue;
         }
-        const output = {
-          name,
-          mode,
-          model,
-          round,
-          order,
-          started: new Date().toISOString(),
-          config,
-          consoleErrors: [],
-          rss: [],
-          cases: [],
-          sort: [],
-        };
-        await measureRun(output, round);
-        if (output.failure) failures++;
-        fs.writeFileSync(filename, JSON.stringify(output, null, 2));
-        console.log('DONE', name);
+        await run(model, mode, round, order);
       }
+    }
+  }
+  if (!pilot && roundCount >= 3 && !failures) {
+    fs.mkdirSync(path.join(folder, 'outliers'), { recursive: true });
+    for (const { model, mode, round, order, worst } of outliers()) {
+      const name = `${model}-${mode}-r${round}`;
+      console.log(`RETRY ${name}: ${worst.toFixed(1)}% from the median of its rounds`);
+      fs.renameSync(path.join(folder, name + '.json'), path.join(folder, 'outliers', name + '.json'));
+      await run(model, mode, round, order, { deviationPercent: worst, thresholdPercent: retryPercent });
     }
   }
 } finally {

@@ -81,6 +81,29 @@
         font-size: 17px;
         color: #4c5658;
       }
+      .excluded {
+        max-width: 920px;
+        margin: 0 0 20px;
+        padding-left: 12px;
+        border-left: 2px solid var(--line);
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      .excluded strong {
+        display: block;
+        color: #4c5658;
+      }
+      .excluded ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .excluded b {
+        font-weight: 600;
+        color: #4c5658;
+        margin-right: 6px;
+      }
       .rig {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -587,13 +610,35 @@
             <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite" target="_blank" rel="noopener noreferrer">
               Gaussian Splat Lite
             </a>
+            ·
+            <a href="https://github.com/manycoretech/aholo-viewer" target="_blank" rel="noopener noreferrer">
+              Aholo Viewer
+            </a>
           </span>
         </h1>
         <p data-i18n="lede" class="lede">
           Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with
-          settings aligned as closely as possible. Sorted groups use radial ordering; stochastic groups keep native
-          behavior without temporal accumulation.
+          settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view depth
+          only); stochastic groups keep native behavior without temporal accumulation.
         </p>
+        <aside class="excluded">
+          <strong data-i18n="excludedTitle">Not benchmarked: Babylon.js and three.js</strong>
+          <ul>
+            <li>
+              <b>Babylon.js</b>
+              <span data-i18n="excludedBabylon">
+                Compresses splat data (8-bit rotation and color, half-float covariance), which visibly degrades the
+                image.
+              </span>
+            </li>
+            <li>
+              <b>three.js</b>
+              <span data-i18n="excludedThree">
+                Sorts with only 12-bit keys, and cannot load HotelFareza or WillaGlobalPoland.
+              </span>
+            </li>
+          </ul>
+        </aside>
         <div class="rig">
           <div>
             <b>3024 × 1964</b>
@@ -626,8 +671,8 @@
           <select id="scenario">
             <option data-i18n="moving" value="moving" selected>Moving · main view</option>
             <option data-i18n="static" value="static">Static · main view</option>
-            <option data-i18n="closeMoving" value="close-moving">Moving · closer side view</option>
-            <option data-i18n="close" value="close">Static · closer side view</option>
+            <option data-i18n="closeMoving" value="close-moving">Moving · second view</option>
+            <option data-i18n="close" value="close">Static · second view</option>
           </select>
         </label>
         <label>
@@ -693,8 +738,8 @@
       <section>
         <h2 data-i18n="precisionTitle">Sorting precision, explained</h2>
         <p data-i18n="precisionIntro" class="note">
-          All sorted groups use radial ordering. Engines encode distance or squared distance, so equal key widths do not
-          mean equal quantization; async results may lag the camera.
+          Sorted groups use radial ordering, except Aholo Viewer, which sorts by view depth. Engines encode distance or
+          squared distance, so equal key widths do not mean equal quantization; async results may lag the camera.
         </p>
         <div class="table-wrap precision-table">
           <table>
@@ -777,6 +822,23 @@
                 <td>
                   <span data-i18n="gslDefaultPrec">
                     15 fraction bits; camera distance on both backends. WebGL2 uses a 32 MiB count table.
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Aholo Viewer · WebGL2</td>
+                <td>
+                  <span data-i18n="aholoKey">
+                    32-bit float view-depth key (high precision; the default is 16-bit half float)
+                  </span>
+                </td>
+                <td>
+                  <span data-i18n="aholoExec">GPU key pass, fenced readback → Worker; 2 × 16-bit radix digits</span>
+                </td>
+                <td>
+                  <span data-i18n="aholoPrec">
+                    float32 view depth, no truncation; re-sorts after a 0.1 mm or ~0.16° camera change. Readback and
+                    Worker transfers add async latency.
                   </span>
                 </td>
               </tr>
@@ -918,6 +980,15 @@
             </span>
           </p>
           <p>
+            <strong data-i18n="aholoTitle">Aholo Viewer</strong>
+            <span data-i18n="aholoBody">
+              WebGL2 only; the npm package has no public WebGPU renderer. Compressed source data (float32 position,
+              half-float scale, color and opacity, 32-bit rotation, 10–11-bit SH clamped to ±1), fp32 GPU pack and
+              32-bit sort keys. preBlur 0.3, focalAdjustment 2, radius ≤ 512; area culling equals radius 2 for an opaque
+              isotropic splat. Fixed 1/255 alpha floor; MSAA, TAA and tone mapping off.
+            </span>
+          </p>
+          <p>
             <strong data-i18n="cacheTitle">Caching and motion</strong>
             <span data-i18n="cacheTitleBody">
               Static tests keep drawing with native caches. Moving tests use the lab's real-time orbit (±45°, 8 s
@@ -928,8 +999,9 @@
           <p>
             <strong data-i18n="supportTitle">Supported features</strong>
             <span data-i18n="supportTitleBody">
-              All eight backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run
-              raw stochastic. Main and closer views are tested static and moving.
+              All nine backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run
+              raw stochastic. Main and second views are tested static and moving: a closer side view, or the entrance
+              side of WillaGlobalPoland.
             </span>
           </p>
         </div>
@@ -977,8 +1049,8 @@
       const I18N = {
         eyebrow: ['Measured locally · Apple M5 Pro', '本地实测 · Apple M5 Pro'],
         lede: [
-          'Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with settings aligned as closely as possible. Sorted groups use radial ordering; stochastic groups keep native behavior without temporal accumulation.',
-          '同一 PLY、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存，设置尽量对齐。深度排序组按径向距离排序；随机渲染组保留原生行为，不做时间累积。',
+          'Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view depth only); stochastic groups keep native behavior without temporal accumulation.',
+          '同一 PLY、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存，设置尽量对齐。深度排序组按径向距离排序（Aholo Viewer 仅支持视深排序）；随机渲染组保留原生行为，不做时间累积。',
         ],
         pixels: ['1512 × 982 CSS px · DPR 2 · No MSAA', '1512 × 982 CSS px · DPR 2 · 无 MSAA'],
         chip: ['M5 Pro · 16 GPU cores', 'M5 Pro · 16 核 GPU'],
@@ -988,7 +1060,7 @@
         elevator: ['Elevator · 2.80M', 'Elevator · 279 万'],
         scenarioLabel: ['Scene', '场景'],
         static: ['Static · main view', '静止 · 主视角'],
-        close: ['Static · closer side view', '静止 · 近景侧视角'],
+        close: ['Static · second view', '静止 · 第二视角'],
         moving: ['Moving · main view', '连续移动 · 主视角'],
         metricLabel: ['Metric', '指标'],
         language: ['Language', '语言'],
@@ -1009,8 +1081,8 @@
         ],
         precisionTitle: ['Sorting precision, explained', '排序精度与差异'],
         precisionIntro: [
-          'All sorted groups use radial ordering. Engines encode distance or squared distance, so equal key widths do not mean equal quantization; async results may lag the camera.',
-          '所有深度排序组按径向距离排序。各引擎编码距离或距离平方，键位数相同不代表量化相同；异步结果可能滞后于相机。',
+          'Sorted groups use radial ordering, except Aholo Viewer, which sorts by view depth. Engines encode distance or squared distance, so equal key widths do not mean equal quantization; async results may lag the camera.',
+          '除 Aholo Viewer 按视深排序外，深度排序组均按径向距离排序。各引擎编码距离或距离平方，键位数相同不代表量化相同；异步结果可能滞后于相机。',
         ],
         renderer: ['Renderer', '渲染器'],
         keyEncoding: ['Sort key', '排序键'],
@@ -1045,6 +1117,18 @@
         gslDefaultExec: [
           'WebGL2: Worker/WASM, one counting pass over 23 effective bits (sign bit fixed). WebGPU: 3 × 8-bit radix digits.',
           'WebGL2：Worker/WASM，1 轮计数排序，23 个有效位（符号位固定）。WebGPU：3 轮 8 位 radix。',
+        ],
+        aholoKey: [
+          '32-bit float view-depth key (high precision; the default is 16-bit half float)',
+          '32 位浮点视深键（高精度；默认为 16 位半精度）',
+        ],
+        aholoExec: [
+          'GPU key pass, fenced readback → Worker; 2 × 16-bit radix digits',
+          'GPU 计算排序键，fence 回读 → Worker；2 × 16 位基数排序',
+        ],
+        aholoPrec: [
+          'float32 view depth, no truncation; re-sorts after a 0.1 mm or ~0.16° camera change. Readback and Worker transfers add async latency.',
+          'float32 视深，不截断；相机移动 0.1 mm 或约 0.16° 即重新排序。回读与 Worker 传输带来异步延迟。',
         ],
         gslDefaultPrec: [
           '15 fraction bits; camera distance on both backends. WebGL2 uses a 32 MiB count table.',
@@ -1108,8 +1192,17 @@
         ],
         supportTitle: ['Supported features', '可用功能'],
         supportTitleBody: [
-          'All eight backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run raw stochastic. Main and closer views are tested static and moving.',
-          '八个后端均测试深度排序；PlayCanvas WebGPU 与两个 Gaussian Splat Lite 后端另测原始随机渲染。主视角与近景视角各测静止和移动。',
+          'All nine backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run raw stochastic. Main and second views are tested static and moving: a closer side view, or the entrance side of WillaGlobalPoland.',
+          '九个后端均测试深度排序；PlayCanvas WebGPU 与两个 Gaussian Splat Lite 后端另测原始随机渲染。主视角与第二视角各测静止和移动：第二视角为近景侧视角，WillaGlobalPoland 为入口一侧。',
+        ],
+        excludedTitle: ['Not benchmarked: Babylon.js and three.js', '未纳入测试：Babylon.js 与 three.js'],
+        excludedBabylon: [
+          'Compresses splat data (8-bit rotation and color, half-float covariance), which visibly degrades the image.',
+          '压缩 splat 数据（8 位旋转和颜色、半精度协方差），画面明显退化。',
+        ],
+        excludedThree: [
+          'Sorts with only 12-bit keys, and cannot load HotelFareza or WillaGlobalPoland.',
+          '排序键只有 12 位，且无法加载 HotelFareza 和 WillaGlobalPoland。',
         ],
         sourcesTitle: ['Versions, data and sources', '版本、数据与来源'],
         reference: ['Layout / protocol reference', '版式 / 协议参考'],
@@ -1173,12 +1266,17 @@
           'Gaussian Splat Lite and Spark use Three.js r187; Radix 0.0.1 uses r186 (its WebGPU path is incompatible with r187). Native sorting and caching stay on.',
           'Gaussian Splat Lite 与 Spark 使用 Three.js r187；Radix 0.0.1 使用 r186（其 WebGPU 路径不兼容 r187）。原生排序与缓存保持开启。',
         ],
+        aholoTitle: ['Aholo Viewer', 'Aholo Viewer'],
+        aholoBody: [
+          'WebGL2 only; the npm package has no public WebGPU renderer. Compressed source data (float32 position, half-float scale, color and opacity, 32-bit rotation, 10–11-bit SH clamped to ±1), fp32 GPU pack and 32-bit sort keys. preBlur 0.3, focalAdjustment 2, radius ≤ 512; area culling equals radius 2 for an opaque isotropic splat. Fixed 1/255 alpha floor; MSAA, TAA and tone mapping off.',
+          '仅 WebGL2；npm 包未提供公开的 WebGPU 渲染器。源数据为 Compressed 格式（float32 位置，半精度缩放、颜色与不透明度，32 位旋转，10–11 位 SH 并截断到 ±1），GPU 打包用 fp32，排序键 32 位。preBlur 0.3、focalAdjustment 2、半径 ≤ 512；面积剔除阈值相当于不透明各向同性 splat 的半径 2。alpha 下限固定为 1/255；关闭 MSAA、TAA 与色调映射。',
+        ],
         editorTitle: ['SuperSplat Viewer', 'SuperSplat Viewer'],
         editorBody: [
           'Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling off; model rotation reset to match the PLY.',
           '通过公开 API 创建，使用固定版本的 Engine。深度排序、large 工作缓冲、统一相机与分辨率；关闭后期效果与性能缩放；重置模型旋转以匹配 PLY。',
         ],
-        closeMoving: ['Moving · closer side view', '移动 · 近侧视角'],
+        closeMoving: ['Moving · second view', '移动 · 第二视角'],
         sortedGroup: ['Depth-sorted rendering', '深度排序渲染'],
         rawGroup: ['Raw stochastic rendering', '原始随机渲染'],
         testDate: ['Tested', '测试日期'],
@@ -1343,7 +1441,7 @@
           ['renderer', 'location', 'worker', 'rpc', 'async', 'radix'],
           sortItems.map(item => [
             dot(item.mode) + title(item),
-            item.mode === 'pc-gl' || item.mode === 'radix-gl'
+            item.mode === 'pc-gl' || item.mode === 'radix-gl' || item.mode === 'aholo-gl'
               ? 'Worker / JavaScript'
               : item.mode === 'spark-gl' || item.mode === 'gsl-gl'
                 ? 'Worker / WASM'

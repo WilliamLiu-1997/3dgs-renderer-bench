@@ -25,8 +25,8 @@ IMAGE_PREFIX = '../harness/results/'
 PROTOCOL = (
     'Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating '
     'starting backend. Full original PLY/SH3 inputs, matched cameras and resolution, rendering settings adjusted '
-    'as closely as possible, radial sorting in all depth-sorted groups and native caching. Every backend measures '
-    'static and moving (±45°, 8 s real-time orbit) main and closer side views; PlayCanvas WebGPU and both Gaussian Splat Lite '
+    'as closely as possible, radial sorting in all depth-sorted groups except Aholo Viewer (view depth only) and native caching. Every backend measures '
+    'static and moving (±45°, 8 s real-time orbit) main and second views (a closer side view; WillaGlobalPoland: its entrance side); PlayCanvas WebGPU and both Gaussian Splat Lite '
     'backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled '
     'with the lab sampler and one GPU frame in flight: each frame is submitted after the '
     'previous frame completes on the GPU; samples are intervals between submissions, FPS = frames / sampled time, '
@@ -91,11 +91,17 @@ def main():
     if not validation['complete'] or validation['protocol'] != config['protocol']:
         raise SystemExit('Publish requires a complete validation of the current protocol')
 
-    # Raw results: every run JSON plus the round-one captures.
+    # Raw results: every run JSON, the retried originals and activity log, plus the round-one captures.
     shutil.rmtree(PUBLISHED_RESULTS, ignore_errors=True)
     PUBLISHED_RESULTS.mkdir()
     for f in files:
         shutil.copy2(f, PUBLISHED_RESULTS / f.name)
+    if (source / 'outliers').is_dir():
+        (PUBLISHED_RESULTS / 'outliers').mkdir()
+        for f in run_files(source / 'outliers'):
+            shutil.copy2(f, PUBLISHED_RESULTS / 'outliers' / f.name)
+    if (source / 'activity.log').exists():
+        shutil.copy2(source / 'activity.log', PUBLISHED_RESULTS / 'activity.log')
     for capture in source.glob('*-r1-*.png'):
         if not capture.name.startswith('._') and not capture.name.endswith('-failure.png'):
             shutil.copy2(capture, PUBLISHED_RESULTS / capture.name)

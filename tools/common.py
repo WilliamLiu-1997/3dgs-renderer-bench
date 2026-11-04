@@ -26,6 +26,7 @@ BACKEND_STYLE = {
     'viewer-gpu': {'name': 'SuperSplat Viewer · WebGPU', 'short': 'SuperSplat Viewer / WebGPU', 'color': '#b24b72'},
     'pc-gpu': {'name': 'PlayCanvas · WebGPU', 'short': 'PlayCanvas / WebGPU', 'color': '#558c29'},
     'pc-gl': {'name': 'PlayCanvas · WebGL2', 'short': 'PlayCanvas / WebGL2', 'color': '#287c62'},
+    'aholo-gl': {'name': 'Aholo Viewer · WebGL2', 'short': 'Aholo Viewer / WebGL2', 'color': '#4a4f57'},
 }
 SCENARIOS = ['moving', 'static', 'close-moving', 'close']
 
@@ -47,7 +48,7 @@ def run_files(folder):
 
 
 def scenario_name(case):
-    if case['angle']:
+    if case['view'] == 'second':
         return 'close-moving' if case['moving'] else 'close'
     return 'moving' if case['moving'] else 'static'
 
@@ -80,6 +81,28 @@ def expected_parameters(mode):
         return {**shared, 'minPixelRadius': 2, 'maxPixelRadius': 512}
     if mode.startswith('gsl'):
         return {**shared, 'minPixelRadius': 1}
+    if mode.startswith('aholo'):
+        return {
+            'packType': 'Compressed',
+            'pack': {'highPrecisionEnabled': True, 'precalculateEnabled': True, 'cameraRelativeEnabled': False},
+            'raster': {
+                'preBlurAmount': 0.3,
+                'blurAmount': 0,
+                'focalAdjustment': 2,
+                'maxStdDev': math.sqrt(8),
+                'maxPixelRadius': 512,
+                'detailCullingThreshold': math.pi * (1 - math.exp(-4)) * 0.5,
+                'detailCullingAlphaEnabled': False,
+            },
+            'sort': {
+                'highPrecisionEnabled': True,
+                'minIntervalMs': 0,
+                'sortCameraDistance': 1e-4,
+                'sortCameraCoorient': 1 - 1e-6,
+                'sortSplatDistance': 1e-4,
+                'sortSplatCoorient': 1 - 1e-6,
+            },
+        }
     if mode.startswith('radix'):
         return {
             'method': 'ewa',

@@ -26,6 +26,8 @@ Formal frame cases use 2 seconds of warm-up, then 5 seconds static or 8 seconds 
 
 The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the current protocol are skipped. `RESULTS_DIR` overrides the destination. The published `results/` contains the raw data behind `report/`.
 
+Background activity: on macOS the runner keeps the system awake and declares user activity every 30 s, because idle-time maintenance on an idle Mac on AC power (media analysis, Photos indexing, Messages) slowed GPU-bound runs by up to 30% for 15–25 minutes. Other platforms skip this, so disable their idle maintenance and sleep before a run. Every 20 s the five busiest non-Chrome processes go to `activity.log` (skipped where `ps` is unavailable). After three full rounds, any run with a case more than 3% (`RETRY_PERCENT`) off the median FPS of its rounds is rerun once; the original moves to `outliers/` and the rerun records the deviation in `retry`. Retried runs are excluded from the execution-order check. `activity.log` and `outliers/` are published with the raw results.
+
 ```sh
 node harness/run.mjs willa radix-gpu viewer-gpu pc-gpu
 ROUNDS=1 node harness/run.mjs elevator gsl-gpu
@@ -64,7 +66,7 @@ The harness adapters import `lab/config.js` directly, so presets and pinned pack
 
 Spark's radius limits are focal-scaled; PlayCanvas's minimum projected size is matched on that basis. PlayCanvas extra contribution culling is disabled (`minContribution: 0`), with `colorUpdateAngle: 0`. Native support, projection, culling and sorting precision still differ: these presets do not guarantee identical images. The full source models contain no LOD hierarchy.
 
-Every backend measures static and moving versions of both the main and closer side views. PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.6.2 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
+Every backend measures static and moving versions of both the main and second views. Each model's `secondView` in `config.json` either orbits and scales the main offset (a closer side view) or sets its own target and offset (the entrance side of WillaGlobalPoland). PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.6.2 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
 
 Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). The harness drives Viewer updates and draws at the fixed physical resolution. Its loading timer includes Viewer initialization, model loading and initial rendering, ending at the `firstFrame` event. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
 
@@ -92,7 +94,9 @@ Spark retains float32 keys and uses two 16-bit Worker/WASM radix digits. PlayCan
 
 GSL 1.6.2 uses camera distance for radial sorting on both backends. Default sorting drops the lowest eight float32-key bits: one counting pass over 23 effective bits on WebGL2 (32 MiB count table), three 8-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL 1.6.2’s default 16-bit front-to-back ordering (two 8-bit GPU radix passes on WebGPU).
 
-GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally and blends/outputs in sRGB, matching the lab. PlayCanvas uses linear tone mapping and native sRGB output. Native SH decoding and source encodings remain unchanged.
+Aholo Viewer 1.12.0 sorts by view depth only (no radial option). It uses its high-precision options: 32-bit float keys (default: 16-bit half floats in one 65,536-bucket counting pass) sorted as two 16-bit radix digits in a Worker after a fenced GPU readback, and an fp32 GPU pack. Its Compressed source keeps float32 positions, half-float scale, color and opacity, 32-bit octahedral rotation and 11/10/11-bit SH clamped to ±1. It re-sorts after a 0.1 mm or ~0.16° camera change (defaults: 1 m and ~16°); tighter thresholds trip on float32 rounding of an unchanged pose. It never flushes GL itself, so the sort diagnostic flushes while waiting instead of drawing extra frames.
+
+GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally and blends/outputs in sRGB, matching the lab. Radix uses an sRGB working space on both backends, so it also blends in sRGB. PlayCanvas uses linear tone mapping and native sRGB output. Native SH decoding and source encodings remain unchanged.
 
 ## Outputs
 
@@ -105,6 +109,6 @@ npm run report          # validate → analyze → plot into outputs/
 npm run report:publish  # same, then publish to report/ and harness/results/
 ```
 
-Only matching-protocol data is accepted; full validation expects 72 successful runs across three models, eight backends and three rounds (396 frame-performance groups and 72 sorting groups). Publishing copies the raw runs and round-one captures to `harness/results/`, the report artifacts to `report/`, and regenerates `report/input-manifest.json` (hardware, model hashes, protocol, dates).
+Only matching-protocol data is accepted; full validation expects 81 successful runs across three models, nine backends and three rounds (432 frame-performance groups and 81 sorting groups). Publishing copies the raw runs and round-one captures to `harness/results/`, the report artifacts to `report/`, and regenerates `report/input-manifest.json` (hardware, model hashes, protocol, dates).
 
 To refresh only Radix sorting after completed frame runs, run `npm run bench:sort`. It measures both Radix backends across three models and three interleaved rounds, with four warm-up iterations and 16 samples per run. Only the raw `sort` section is replaced; each supplement records its own timestamp, browser and execution order. Frame, memory and capture data remain from the original runs. Regenerate and publish the report afterward.

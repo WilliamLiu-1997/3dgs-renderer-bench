@@ -6,6 +6,7 @@ export const PACKAGES = {
   gsl: { name: 'gaussian-splat-lite', version: '1.6.2' },
   threeRadix: { name: 'three', installName: 'three-radix', version: '0.186.1' },
   three: { name: 'three', version: '0.187.0' },
+  aholo: { name: '@manycore/aholo-viewer', version: '1.12.0', entry: 'dist/index.js' },
 };
 export const BACKENDS = [
   { id: 'spark-gl', lib: 'spark', name: 'Spark', backend: 'WebGL2' },
@@ -16,6 +17,7 @@ export const BACKENDS = [
   { id: 'viewer-gpu', lib: 'viewer', name: 'SuperSplat Viewer', backend: 'WebGPU' },
   { id: 'pc-gpu', lib: 'playcanvas', name: 'PlayCanvas', backend: 'WebGPU' },
   { id: 'pc-gl', lib: 'playcanvas', name: 'PlayCanvas', backend: 'WebGL2' },
+  { id: 'aholo-gl', lib: 'aholo', name: 'Aholo Viewer', backend: 'WebGL2' },
 ];
 // GSL's baseline. Spark's radius limits use focal-scaled units; PlayCanvas's
 // minPixelSize uses the same projected units. Alpha matches PlayCanvas's WebGPU
@@ -60,6 +62,32 @@ export const PRESETS = {
     extended: true,
   },
   gsl: { ...baseline, fastSort: true, stochastic: false },
+  // Aholo Viewer's raster shares Spark's focal-scaled units. It culls by projected area instead of radius;
+  // the threshold equals Spark's minPixelRadius 2 for an opaque isotropic splat (pi * (1 - e^-4) * (2 / sqrt 8)^2).
+  // 32-bit float sort keys (the default is 16-bit half floats) and fp32 pack. It sorts by view depth only,
+  // keeps its fixed 1/255 alpha floor and clips without a margin.
+  aholo: {
+    pack: { highPrecisionEnabled: true, precalculateEnabled: true, cameraRelativeEnabled: false },
+    raster: {
+      preBlurAmount: baseline.preBlurAmount,
+      blurAmount: baseline.blurAmount,
+      focalAdjustment: baseline.focalAdjustment,
+      maxStdDev: Math.sqrt(8),
+      maxPixelRadius: 512,
+      detailCullingThreshold: Math.PI * (1 - Math.exp(-4)) * 0.5,
+      detailCullingAlphaEnabled: false,
+    },
+    // Re-sort and re-evaluate SH after a 0.1 mm or ~0.16° camera change (the defaults are 1 m and ~16°). The
+    // orbit moves far more per frame; tighter thresholds trip on float32 rounding of an unchanged pose.
+    sort: {
+      highPrecisionEnabled: true,
+      minIntervalMs: 0,
+      sortCameraDistance: 1e-4,
+      sortCameraCoorient: 1 - 1e-6,
+      sortSplatDistance: 1e-4,
+      sortSplatCoorient: 1 - 1e-6,
+    },
+  },
   playcanvas,
 };
 export const FRAME_METRIC = 'frame-interval-ms';

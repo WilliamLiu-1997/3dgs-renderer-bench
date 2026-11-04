@@ -1,11 +1,11 @@
 {
-  "protocol": "radial-eight-backends-four-views-one-frame-in-flight-v3",
+  "protocol": "nine-backends-four-views-one-frame-in-flight-v5",
   "complete": true,
-  "runs": 72,
-  "performanceGroups": 396,
-  "measuredFrames": 75081,
-  "sortGroups": 72,
-  "sortSamples": 1152,
+  "runs": 81,
+  "performanceGroups": 432,
+  "measuredFrames": 85969,
+  "sortGroups": 81,
+  "sortSamples": 1296,
   "frameMetric": "frame-interval-ms",
   "fpsMatchesMeanFrameInterval": true,
   "frameStatisticsRecomputedFromIntervals": true,
@@ -43,7 +43,8 @@
   ],
   "dpr": 2,
   "testDates": [
-    "2026-11-03"
+    "2026-11-04",
+    "2026-11-05"
   ],
   "testTimeZone": "Australia/Sydney",
   "memoryMetric": "JS heap + ArrayBuffer/external backing + Worker WASM accounting sum; explicit GPU allocation separate"
