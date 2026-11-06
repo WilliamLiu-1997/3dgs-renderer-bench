@@ -42,7 +42,7 @@ const playcanvas = {
 export const PRESETS = {
   radix: {
     method: 'ewa',
-    sortBits: 24,
+    sortBits: 16,
     params: { minAlpha: baseline.minAlpha, maxStdDev: Math.sqrt(8), falloff: 1 },
     objectParams: {
       minPixelRadius: 2,
@@ -64,7 +64,7 @@ export const PRESETS = {
   gsl: { ...baseline, fastSort: true, stochastic: false },
   // Aholo Viewer's raster shares Spark's focal-scaled units. It culls by projected area instead of radius;
   // the threshold equals Spark's minPixelRadius 2 for an opaque isotropic splat (pi * (1 - e^-4) * (2 / sqrt 8)^2).
-  // 32-bit float sort keys (the default is 16-bit half floats) and fp32 pack. It sorts by view depth only,
+  // 16-bit half-float sort keys and fp32 pack. It sorts by view depth only,
   // keeps its fixed 1/255 alpha floor and clips without a margin.
   aholo: {
     pack: { highPrecisionEnabled: true, precalculateEnabled: true, cameraRelativeEnabled: false },
@@ -80,7 +80,7 @@ export const PRESETS = {
     // Re-sort and re-evaluate SH after a 0.1 mm or ~0.16° camera change (the defaults are 1 m and ~16°). The
     // orbit moves far more per frame; tighter thresholds trip on float32 rounding of an unchanged pose.
     sort: {
-      highPrecisionEnabled: true,
+      highPrecisionEnabled: false,
       minIntervalMs: 0,
       sortCameraDistance: 1e-4,
       sortCameraCoorient: 1 - 1e-6,
