@@ -2,7 +2,7 @@
 
 The test page at `/test/` runs entirely in the browser:
 
-- Drop a local PLY or SPZ, or enter a direct HTTP(S) URL ending in `.ply` or `.spz` (query parameters are supported). Remote servers must allow CORS. Downloads can be stopped and happen once in the browser; all renderers share the downloaded file. Download time is excluded from renderer load time and recorded as `source.downloadMs` in JSON. Files are never uploaded to a server. SPZ is converted locally to a common PLY with `@playcanvas/splat-transform@3.6.4`, preserving SH; conversion time is reported separately. This is not a comparison of native SPZ loaders.
+- Drop a local PLY, SPZ or SOG, or enter a direct HTTP(S) URL ending in `.ply`, `.spz` or `.sog` (query parameters are supported). Remote servers must allow CORS. Downloads can be stopped and happen once in the browser; all renderers share the downloaded file. Download time is excluded from renderer load time and recorded as `source.downloadMs` in JSON. Files are never uploaded to a server. SPZ is converted locally to a common PLY with `@playcanvas/splat-transform@3.6.4`, preserving SH; conversion time is reported separately. This is not a comparison of native SPZ loaders. SOG files are loaded directly through each renderer’s native loader, preserving shared SH codebooks where supported. Radix 0.0.1 is disabled for SOG; Spark and Aholo decode into per-splat SH storage.
 - Preview and orbit the model, or enter an exact shared camera. Configure physical resolution, warm-up, sampling time, and repeat count. Rendering parameters use fixed matched presets.
 - All selected depth-sorted backends use radial distance sorting without post-processing. Reports record the effective settings for each backend.
 - Select Spark / WebGL2, Radix / WebGPU or WebGL2, SuperSplat Viewer / WebGPU, PlayCanvas Engine / WebGL2 or WebGPU, and Gaussian Splat Lite / WebGL2 or WebGPU. The published main report records its exact tested versions and settings.
@@ -18,19 +18,19 @@ Fixed public settings follow GSL's preset as closely as the renderers allow:
 | --- | --- | --- | --- |
 | Attribute storage | 32-byte base records / accumulator | Extended source + accumulator | `dataFormat: 'large'` (32-byte work buffer) |
 | Minimum radius / size | `minPixelRadius: 1` | `minPixelRadius: 2` | `minPixelSize: 2` |
-| Maximum radius | No public limit setting in 1.6.2 | `maxPixelRadius: 512` | No equivalent public setting |
+| Maximum radius | No public limit setting in 1.7.0 | `maxPixelRadius: 512` | No equivalent public setting |
 | Pre-blur / compensated blur | `0.3 / 0` | `0.3 / 0` | Native 0.3 blur, `antiAlias: false` |
 | Focal adjustment | `2` | `2` | Native projection |
 | Forward alpha threshold | `minAlpha: 1 / 255` | `minAlpha: 1 / 255` | `alphaClipForward: 1 / 255` |
 | Sorting | Radial distance | Radial distance | Radial distance |
 
-Spark's minimum radius uses focal-scaled units, so it is multiplied by GSL's focal adjustment. Spark and Radix retain their 512-pixel maximum radius; GSL 1.6.2 does not expose that limit. PlayCanvas's projected size threshold is matched on the same basis; its extra contribution culling is disabled (`minContribution: 0`). Spark and GSL use `clipXY: 1.25`. PlayCanvas has no equivalent public frustum-margin or maximum-radius control. Sorting precision, opacity-dependent support and other native projection details still differ, so these presets do not guarantee identical images. These parameters are fixed in the lab. See the [Spark parameters](https://sparkjs.dev/docs/spark-renderer/) and [PlayCanvas parameters](https://api.playcanvas.com/engine/classes/GSplatParams.html).
+Spark's minimum radius uses focal-scaled units, so it is multiplied by GSL's focal adjustment. Spark and Radix retain their 512-pixel maximum radius; GSL 1.7.0 does not expose that limit. PlayCanvas's projected size threshold is matched on the same basis; its extra contribution culling is disabled (`minContribution: 0`). Spark and GSL use `clipXY: 1.25`. PlayCanvas has no equivalent public frustum-margin or maximum-radius control. Sorting precision, opacity-dependent support and other native projection details still differ, so these presets do not guarantee identical images. These parameters are fixed in the lab. See the [Spark parameters](https://sparkjs.dev/docs/spark-renderer/) and [PlayCanvas parameters](https://api.playcanvas.com/engine/classes/GSplatParams.html).
 
 PlayCanvas uses `large` on both WebGL2 and WebGPU, and reports the effective `dataFormat`. This aligns attribute storage more closely with GSL and Spark Extended; their encodings still differ. It does not change framebuffer or sorting precision.
 
 Radix uses EWA projection, extended source data, SH up to degree 3, radial sorting with the native default 24-bit keys, `minAlpha: 1/255`, `preBlurAmount: 0.3`, `blurAmount: 0`, `clipXY: 1.25`, minimum radius 2 and maximum radius 512. Its WebGL2 backend uses Three.js WebGPURenderer's WebGL fallback.
 
-Viewer is created through its public `createViewer` API. Sorted rendering, full PLY data and the Engine preset above are used; stochastic rendering, post effects and performance resolution scaling are disabled. Its automatic 180° model rotation is reset, and every draw uses the shared vertical FOV, clipping planes, pose and physical dimensions. The lab drives Viewer updates and draws explicitly at the fixed physical resolution through `app.update` and `app.render`. Its loading timer runs from `createViewer()` to the `firstFrame` event, including Viewer initialization, model loading and initial rendering. Other backends time their public loader calls, so these loading intervals are not directly comparable.
+Viewer is created through its public `createViewer` API. Sorted rendering, full input data and the Engine preset above are used; stochastic rendering, post effects and performance resolution scaling are disabled. Its automatic 180° model rotation is reset, and every draw uses the shared vertical FOV, clipping planes, pose and physical dimensions. The lab drives Viewer updates and draws explicitly at the fixed physical resolution through `app.update` and `app.render`. Its loading timer runs from `createViewer()` to the `firstFrame` event, including Viewer initialization, model loading and initial rendering. Other backends time their public loader calls, so these loading intervals are not directly comparable.
 
 ## Run locally
 
@@ -42,7 +42,7 @@ npm run dev
 # http://127.0.0.1:5349/test/
 ```
 
-Bundled versions: GSL 1.6.2, Spark 2.4.0, Radix 0.0.1, Viewer 1.42.0, PlayCanvas 2.24.0-beta.30. This Engine version is bundled locally. Scoped peer overrides keep Viewer and the converter on the same Engine.
+Bundled versions: GSL 1.7.0, Spark 2.4.0, Radix 0.0.1, Viewer 1.42.0, PlayCanvas 2.24.0-beta.30. This Engine version is bundled locally. Scoped peer overrides keep Viewer and the converter on the same Engine.
 
 GSL and Spark use Three.js 0.187.0. Radix uses a separate 0.186.1 selection because its published WebGPU implementation fails with r187. Each result records its actual Three.js revision. Radix 0.0.1 incorrectly lists unused development tools, including macOS-only fsevents, as runtime dependencies. The local package retains its official browser modules unchanged and removes only those dependency/build-script metadata entries so installation also works on Linux/Vercel.
 

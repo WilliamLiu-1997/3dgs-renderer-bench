@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { BACKENDS, PACKAGES } from '../lab/config.js';
+import { BACKENDS, PACKAGES, supportsFormat } from '../lab/config.js';
 
 const harness = path.dirname(fileURLToPath(import.meta.url));
 const modules = path.join(harness, '..', 'node_modules');
@@ -20,6 +20,9 @@ for (const [key, pkg] of Object.entries(PACKAGES)) {
 }
 if (JSON.stringify(config.backends) !== JSON.stringify(BACKENDS.map(b => b.id)))
   throw Error('harness/config.json backends must match lab/config.js BACKENDS');
+for (const [format, spec] of Object.entries(config.formats))
+  if (JSON.stringify(spec.backends) !== JSON.stringify(BACKENDS.filter(b => supportsFormat(b, format)).map(b => b.id)))
+    throw Error(`harness/config.json ${format} support must match the lab`);
 
 fs.mkdirSync(dist, { recursive: true });
 const handlerCall = 'const result = await handler(args, { sendStatus });';

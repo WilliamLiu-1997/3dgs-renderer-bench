@@ -6,7 +6,7 @@ import { PACKAGES, PRESETS } from '../lab/config.js';
 import { sleep, tagPlayCanvasSort } from './timer.js';
 
 // Radix (WebGPU / WebGL2), SuperSplat Viewer and Aholo Viewer reuse the lab adapters with harness instrumentation.
-export async function createShared(config, mode, model, onDevice) {
+export async function createShared(config, mode, model, onDevice, format = 'ply') {
   const radix = mode.startsWith('radix-'),
     aholo = mode.startsWith('aholo-'),
     gpu = mode.endsWith('-gpu');
@@ -24,7 +24,7 @@ export async function createShared(config, mode, model, onDevice) {
   document.body.append(canvas);
   const camera = new THREE.PerspectiveCamera(45, config.width / config.height, 0.1, 3000);
   const loaded = { version: pkg.version, moduleURL };
-  const args = [canvas, camera, `/models/${model}.ply`, `${model}.ply`, config, PRESETS[key], loaded];
+  const args = [canvas, camera, `/models/${model}.${format}`, `${model}.${format}`, config, PRESETS[key], loaded];
   const adapter = radix
     ? await createRadix(lib, gpu, ...args)
     : aholo

@@ -38,21 +38,27 @@ def main():
             'ytick.color': INK,
         }
     )
-    backends = [b['id'] for b in data['backends']]
-    stochastic = sorted({c['mode'] for c in data['cases'] if c['variant'] == 'stochastic'}, key=backends.index)
-    groups = [
-        ('sorted', 'Depth-sorted rendering', backends, 0),
-        ('stochastic', 'Raw stochastic rendering', stochastic, len(backends) + 1.2),
-    ]
     models = [(k, v) for k, v in data['models'].items() if any(c['model'] == k for c in data['cases'])]
     # Add header space while preserving the charts' physical size and spacing.
-    height_scale = 26 / 28
-    fig, axes = plt.subplots(4, len(models), figsize=(9 * len(models), 28), squeeze=False)
-    fig.subplots_adjust(
-        left=0.15, right=0.97, top=0.88 * height_scale, bottom=0.07 * height_scale, wspace=0.55, hspace=0.42
-    )
+    rows = [(format, scenario, view) for format in data['formats'] for scenario, view in SCENARIOS]
+    fig, axes = plt.subplots(len(rows), len(models), figsize=(9 * len(models), 6 * len(rows)), squeeze=False)
+    fig.subplots_adjust(left=0.15, right=0.97, top=0.90, bottom=0.045, wspace=0.55, hspace=0.42)
     for col, (model, info) in enumerate(models):
-        for row, (scenario, view) in enumerate(SCENARIOS):
+        for row, (format, scenario, view) in enumerate(rows):
+            modes_for_format = [
+                m
+                for m in data['formats'][format]['backends']
+                if any(c['format'] == format and c['model'] == model and c['mode'] == m for c in data['cases'])
+            ]
+            stochastic = [
+                m
+                for m in modes_for_format
+                if any(c['format'] == format and c['mode'] == m and c['variant'] == 'stochastic' for c in data['cases'])
+            ]
+            groups = [
+                ('sorted', 'Depth-sorted rendering', modes_for_format, 0),
+                ('stochastic', 'Raw stochastic rendering', stochastic, len(modes_for_format) + 1.2),
+            ]
             ax = axes[row, col]
             extents, annotations, positions, tick_labels = [], [], [], []
             for variant, group, modes, offset in groups:
@@ -60,7 +66,8 @@ def main():
                     mode: [
                         c
                         for c in data['cases']
-                        if c['model'] == model
+                        if c['format'] == format
+                        and c['model'] == model
                         and c['mode'] == mode
                         and c['precision'] == 'default'
                         and c['scenario'] == scenario
@@ -90,15 +97,19 @@ def main():
                 tick_labels.extend(BACKEND_STYLE[m]['short'] for m in modes)
             maximum = max(extents)
             ax.set_yticks(positions, tick_labels, fontsize=9)
-            ax.set_ylim(len(backends) + 4, -1.6)
+            ax.set_ylim(len(modes_for_format) + len(stochastic) + 1, -1.6)
             ax.tick_params(axis='y', length=0, pad=8)
             ax.grid(axis='x', alpha=0.2, zorder=0)
             ax.set_xlabel('Frame interval P50 (ms) · lower is better')
             ax.set_title(
-                f'{view}\n{info["name"]} / {info["count"]:,} splats', loc='left', fontweight='bold', fontsize=13, pad=20
+                f'{format.upper()} · {view}\n{info["name"]} / {info["count"]:,} splats',
+                loc='left',
+                fontweight='bold',
+                fontsize=13,
+                pad=20,
             )
             ax.set_xlim(0, maximum * 1.38)
-            ax.axhline(len(backends) + 0.1, color=LINE, lw=0.8)
+            ax.axhline(len(modes_for_format) + 0.1, color=LINE, lw=0.8)
             for y, value, error, best in annotations:
                 label = f'{value:.2f} ms' + ('  BEST' if best else '')
                 ax.text(
@@ -110,7 +121,7 @@ def main():
                     fontweight='bold' if best else 'normal',
                     color=BEST if best else INK,
                 )
-    dates = ' – '.join(dict.fromkeys([data['testDates'][0], data['testDates'][-1]]))
+    dates = ' · '.join(f'{format.upper()}: {" / ".join(cohort["dates"])}' for format, cohort in data['cohorts'].items())
     versions = data['versions']
     fig.text(
         0.045,
@@ -122,37 +133,39 @@ def main():
     renderer_groups = [
         (
             'ThreeJS:',
-            f'Gaussian Splat Lite {versions["gsl"]} · Spark {versions["spark"]} · Radix {versions["radix"]}',
+            f'Gaussian Splat Lite {data["cohorts"]["ply"]["versions"]["gsl"]} (PLY) / {data["cohorts"]["sog"]["versions"]["gsl"]} (SOG) · Spark {versions["spark"]} · Radix {versions["radix"]}',
         ),
         ('PlayCanvas:', f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]}'),
         ('Other:', f'Aholo Viewer {versions["aholo"]}'),
     ]
     for i, (label, renderers) in enumerate(renderer_groups):
-        y = 0.946 - 0.013 * i
+        y = 0.957 - 0.0076 * i
         fig.text(0.045, y, label, fontsize=18, weight='bold', color=MUTED)
         fig.text(0.135, y, renderers, fontsize=18, color=MUTED)
     fig.text(
         0.045,
-        0.887,
+        0.927,
         f'Tested {dates} ({data["testTimeZone"]})',
         fontsize=11,
         color=MUTED,
     )
     fig.text(
         0.045,
-        0.874,
-        'Apple M5 Pro · 16 GPU cores · 48 GiB · 3024 × 1964 physical pixels · DPR 2 · Full PLY / SH3',
+        0.917,
+        'Apple M5 Pro · 16 GPU cores · 48 GiB · 3024 × 1964 physical pixels · DPR 2 · Full PLY + SOG / SH3 · SOG: 65,536-entry SH codebooks',
         fontsize=11,
         color=MUTED,
     )
     notes = [
+        'PLY results preserved; SOG measured separately with the versions above. Cross-format changes do not isolate codebook performance.',
+        'SOG SH source: shared codebooks in GSL / PlayCanvas / Viewer; expanded per splat in Spark / Aholo. Radix and WillaGlobalPoland / Spark SOG are unavailable.',
         'Median of independent runs; whiskers show run min/max. One GPU frame in flight. Sorted and raw stochastic groups have separate winners.',
         'Aligned rendering presets; real-time orbit ±45° / 8 s. Raw stochastic: no spatial resolve or temporal accumulation.',
         'Gaussian Splat Lite retains default 16-bit front-to-back stochastic sorting. PlayCanvas raw stochastic skips depth sorting. '
         'Aholo Viewer sorts by view depth; the others by camera distance.',
     ]
     for i, note in enumerate(notes):
-        fig.text(0.045, (0.045 - 0.013 * i) * height_scale, note, fontsize=10, color=MUTED)
+        fig.text(0.045, (0.029 - 0.006 * i), note, fontsize=10, color=MUTED)
     for extension in ['png', 'svg']:
         fig.savefig(OUTPUTS / f'benchmark-overview.{extension}', dpi=180)
     plt.close(fig)

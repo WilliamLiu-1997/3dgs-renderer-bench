@@ -24,8 +24,11 @@ const mounts = [
 ];
 
 function resolveFile(pathname) {
-  const model = pathname.match(/^\/models\/([a-z0-9-]+)\.ply$/);
-  if (model) return config.models[model[1]] && path.resolve(harness, config.models[model[1]].path);
+  const model = pathname.match(/^\/models\/([a-z0-9-]+)\.(ply|sog)$/);
+  if (model)
+    return (
+      config.models[model[1]] && path.resolve(harness, config.models[model[1]].path.replace(/\.ply$/, `.${model[2]}`))
+    );
   const [prefix, root] = mounts.find(([prefix]) => pathname.startsWith(prefix));
   const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname.slice(prefix.length - 1)));
   return file.startsWith(root + path.sep) ? file : null;

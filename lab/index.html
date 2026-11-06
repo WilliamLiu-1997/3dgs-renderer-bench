@@ -20,8 +20,8 @@
         <section class="panel">
           <h2>Model</h2>
           <label class="dropzone" id="dropzone">
-            <input id="file" type="file" accept=".ply,.spz" />
-            <strong id="file-label">Drop a PLY or SPZ file</strong>
+            <input id="file" type="file" accept=".ply,.spz,.sog" />
+            <strong id="file-label">Drop a PLY, SPZ or SOG file</strong>
             <span id="file-meta">or click to browse</span>
           </label>
           <form id="url-form" class="model-url">
@@ -37,9 +37,11 @@
               <button type="submit">Load</button>
             </div>
           </form>
-          <p class="hint" id="url-note">Direct PLY or SPZ URL. The server must allow cross-origin downloads (CORS).</p>
+          <p class="hint" id="url-note">
+            Direct PLY, SPZ or SOG URL. The server must allow cross-origin downloads (CORS).
+          </p>
           <p class="hint" id="format-note">
-            Files stay on your device. SPZ is converted locally to PLY for all renderers.
+            Files stay on your device. SPZ is converted locally to PLY. SOG uses native loaders on compatible renderers.
           </p>
         </section>
         <section class="panel">

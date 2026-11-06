@@ -24,7 +24,7 @@ ARTIFACTS = [
 IMAGE_PREFIX = '../harness/results/'
 PROTOCOL = (
     'Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating '
-    'starting backend. Full original PLY/SH3 inputs, matched cameras and resolution, rendering settings adjusted '
+    'starting backend within each format. Full original PLY/SH3 inputs and matched SOG/SH3 conversions, matched cameras and resolution, rendering settings adjusted '
     'as closely as possible, radial sorting in all depth-sorted groups except Aholo Viewer (view depth only) and native caching. Every backend measures '
     'static and moving (±45°, 8 s real-time orbit) main and second views (a closer side view; WillaGlobalPoland: its entrance side); PlayCanvas WebGPU and both Gaussian Splat Lite '
     'backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled '
@@ -53,32 +53,47 @@ def hardware():
     return {**{k: item.get(k) for k in keys}, 'macOS': platform.mac_ver()[0]}
 
 
+def copy_result(source, target):
+    if source.resolve() == target.resolve() or (target.exists() and source.read_bytes() == target.read_bytes()):
+        return
+    shutil.copy2(source, target)
+
+
 def manifest(config, runs):
     models = []
+    sog_inputs = json.loads((OUTPUTS / 'benchmark-data.json').read_text())['sogInputs']
     for key, model in config['models'].items():
         path = (HARNESS / model['path']).resolve()
         print('Hashing', path.name)
+        source_hash = sha256(path)
+        sog = sog_inputs[key]
+        if sog['sourceSha256'] != source_hash or sog['sha256'] != sha256((HARNESS / model['path']).with_suffix('.sog')):
+            raise SystemExit('SOG input hashes do not match the converted model: ' + key)
         models.append(
             {
                 'model': key,
                 'file': path.name,
                 'bytes': path.stat().st_size,
                 'splats': model['count'],
-                'sha256': sha256(path),
+                'sha256': source_hash,
                 'camera': {'target': model['target'], 'offset': model['offset']},
             }
         )
     dates = {
-        datetime.datetime.fromisoformat(r['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat() for r in runs
+        datetime.datetime.fromisoformat(r['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat()
+        for r in runs
+        if r.get('started')
     }
     return {
         'hardware': hardware(),
         'models': models,
+        'sogInputs': sog_inputs,
+        'cohorts': json.loads((OUTPUTS / 'benchmark-data.json').read_text())['cohorts'],
         'config': config,
         'protocol': PROTOCOL,
         'testDates': sorted(dates),
         'testTimeZone': TIME_ZONE,
-        'browser': sorted({r['browser'] for r in runs}),
+        'browser': sorted({r['browser'] for r in runs if r.get('browser')}),
     }
 
 
@@ -88,23 +103,28 @@ def main():
     files = run_files(source)
     runs = [json.loads(f.read_text()) for f in files]
     validation = json.loads((OUTPUTS / 'validation.json').read_text())
-    if not validation['complete'] or validation['protocol'] != config['protocol']:
+    if (
+        not validation['complete']
+        or validation['protocol'] != config['protocol']
+        or validation.get('formats') != config['formats']
+        or validation['records'] != len(runs)
+    ):
         raise SystemExit('Publish requires a complete validation of the current protocol')
+    input_manifest = manifest(config, runs)
 
     # Raw results: every run JSON, the retried originals and activity log, plus the round-one captures.
-    shutil.rmtree(PUBLISHED_RESULTS, ignore_errors=True)
-    PUBLISHED_RESULTS.mkdir()
+    PUBLISHED_RESULTS.mkdir(exist_ok=True)
     for f in files:
-        shutil.copy2(f, PUBLISHED_RESULTS / f.name)
+        copy_result(f, PUBLISHED_RESULTS / f.name)
     if (source / 'outliers').is_dir():
-        (PUBLISHED_RESULTS / 'outliers').mkdir()
+        (PUBLISHED_RESULTS / 'outliers').mkdir(exist_ok=True)
         for f in run_files(source / 'outliers'):
-            shutil.copy2(f, PUBLISHED_RESULTS / 'outliers' / f.name)
+            copy_result(f, PUBLISHED_RESULTS / 'outliers' / f.name)
     if (source / 'activity.log').exists():
-        shutil.copy2(source / 'activity.log', PUBLISHED_RESULTS / 'activity.log')
+        copy_result(source / 'activity.log', PUBLISHED_RESULTS / 'activity.log')
     for capture in source.glob('*-r1-*.png'):
         if not capture.name.startswith('._') and not capture.name.endswith('-failure.png'):
-            shutil.copy2(capture, PUBLISHED_RESULTS / capture.name)
+            copy_result(capture, PUBLISHED_RESULTS / capture.name)
 
     REPORT.mkdir(exist_ok=True)
     for name in ARTIFACTS:
@@ -116,8 +136,10 @@ def main():
     html = (OUTPUTS / '3DGS-Renderer-Bench.html').read_text()
     html = html.replace('"path":"images/', f'"path":"{IMAGE_PREFIX}').replace('href="harness/', 'href="../harness/')
     (REPORT / '3DGS-Renderer-Bench.html').write_text(html)
-    (REPORT / 'input-manifest.json').write_text(json.dumps(manifest(config, runs), ensure_ascii=False, indent=2) + '\n')
-    print(f'Published {len(files)} runs to {PUBLISHED_RESULTS.relative_to(HARNESS.parent)} and the report to report/')
+    (REPORT / 'input-manifest.json').write_text(json.dumps(input_manifest, ensure_ascii=False, indent=2) + '\n')
+    print(
+        f'Published {len(files)} records to {PUBLISHED_RESULTS.relative_to(HARNESS.parent)} and the report to report/'
+    )
 
 
 if __name__ == '__main__':

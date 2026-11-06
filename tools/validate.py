@@ -12,13 +12,20 @@ from zoneinfo import ZoneInfo
 
 from common import (
     FRAME_METRIC,
+    HARNESS,
     OUTPUTS,
     TIME_ZONE,
+    check_config,
+    exclusions,
     expected_parameters,
     frame_statistics,
     load_config,
+    load_failure,
     results_dir,
     run_files,
+    run_name,
+    run_pair,
+    source_format,
 )
 
 config = load_config()
@@ -27,6 +34,8 @@ models = [m for m in config['models'] if '--' + m in sys.argv] or list(config['m
 round_count = 1 if '--single' in sys.argv else 3
 partial = '--partial' in sys.argv
 backends = config['backends']
+formats = config['formats']
+sog_inputs = {}
 variants_for = {
     mode: ['sorted', 'stochastic'] if mode in config['stochasticBackends'] else ['sorted'] for mode in backends
 }
@@ -39,7 +48,13 @@ def round_order(base, round):
     return order[::-1] if round % 2 == 0 else order
 
 
-expected = {f'{model}-{mode}-r{r}' for model in models for mode in backends for r in range(1, round_count + 1)}
+expected = {
+    run_name(model, mode, r, format)
+    for format, spec in formats.items()
+    for model in models
+    for mode in spec['backends']
+    for r in range(1, round_count + 1)
+}
 actual = {f.stem for f in run_files(folder) if any(f.stem.startswith(model + '-') for model in models)}
 if not partial:
     assert actual == expected, f'Missing: {sorted(expected - actual)}; extra: {sorted(actual - expected)}'
@@ -142,12 +157,28 @@ def check_run(name, run):
     state = initial['state']
     assert not run.get('failure'), (name, run.get('failure'))
     assert not run['consoleErrors'], (name, run['consoleErrors'])
-    assert run['config'] == config, name
+    check_config(run, config)
     assert initial['resolution'] == [config['width'], config['height']] and initial['dpr'] == config['dpr'], name
     assert state['sourceCount'] == config['models'][run['model']]['count'] and state['sh'] == 3, name
     assert len(run['order']) == len(set(run['order'])) and mode in run['order'], name
     assert state['sortRadial'] is (not mode.startswith('aholo-')), name
+    format = source_format(run)
     parameters = expected_parameters(mode)
+    if format == 'sog':
+        assert sog_inputs.setdefault(run['model'], run['input']) == run['input'], (
+            name,
+            'SOG input provenance mismatch',
+        )
+        assert run['input']['splats'] == state['sourceCount'] and run['input']['shBands'] == 3, name
+        storage = state['shStorage']
+        assert storage['kind'] == ('per-splat' if mode in ['spark-gl', 'aholo-gl'] else 'shared-codebook'), name
+        if mode.startswith('gsl-'):
+            assert storage['paletteBytes'] > 0 and storage['labelBytes'] >= state['sourceCount'] * 4, name
+        if mode == 'pc-gl':
+            assert all(c['memory'].get('gpuTextureAccounting') == 2 for c in run['cases']), (
+                name,
+                'SOG ImageBitmap uploads require texture accounting v2',
+            )
     assert matches(state['renderParameters'], parameters), name
     camera = config['models'][run['model']]
     assert initial['camera']['position'] == [a + b for a, b in zip(camera['target'], camera['offset'], strict=True)], (
@@ -159,8 +190,8 @@ def check_run(name, run):
         assert 'ExtSplats' in state['sourceType'] and state['accumulatorExtended'], name
         assert state['lodEnabled'] is True and state['hasLodData'] is False, name
     if mode == 'viewer-gpu':
-        assert state['engineVersion'] == config['versions']['playcanvas'], name
-        assert state['engineCommit'] == config['commits']['playcanvas'], name
+        assert state['engineVersion'] == run['config']['versions']['playcanvas'], name
+        assert state['engineCommit'] == run['config']['commits']['playcanvas'], name
     if mode == 'gsl-gpu' or mode.startswith('radix-'):
         assert state['workingColorSpace'] == 'srgb' and state['outputColorSpace'] == 'srgb', name
     if mode == 'gsl-gpu':
@@ -180,54 +211,82 @@ def check_run(name, run):
     return frames
 
 
-frames = groups = sort_groups = 0
+runs = {name: json.loads((folder / (name + '.json')).read_text()) for name in sorted(actual)}
+excluded = exclusions(runs.values())
+frames = groups = sort_groups = successful = 0
+skipped = set()
 browsers, test_dates = set(), set()
 initial_orders, execution, sort_execution, retried = {}, [], [], set()
-for name in sorted(actual):
-    run = json.loads((folder / (name + '.json')).read_text())
-    frames += check_run(name, run)
-    groups += len(run['cases'])
-    sort_groups += len(run['sort'])
-    browsers.add(run['browser'])
-    test_dates.add(datetime.datetime.fromisoformat(run['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat())
-    if not run.get('retry'):
-        execution.append((run['started'], run['round'], run['model'], run['mode']))
+for name, run in runs.items():
+    check_config(run, config)
+    if run_pair(run) in excluded:
+        assert not run.get('failure') or load_failure(run), (name, run.get('failure'))
+        if run.get('skipped'):
+            reference = runs[run['skipped']['failedRun']]
+            assert load_failure(reference) and run_pair(reference) == run_pair(run), name
+            skipped.add((source_format(run), run['round'], run['model'], run['mode']))
     else:
-        retried.add((run['round'], run['model'], run['mode']))
+        frames += check_run(name, run)
+        groups += len(run['cases'])
+        sort_groups += len(run['sort'])
+        successful += 1
+    if run.get('browser'):
+        browsers.add(run['browser'])
+    if run.get('started'):
+        test_dates.add(
+            datetime.datetime.fromisoformat(run['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat()
+        )
+    format = source_format(run)
+    if run.get('skipped'):
+        pass
+    elif not run.get('retry'):
+        execution.append((run['started'], format, run['round'], run['model'], run['mode']))
+    else:
+        retried.add((format, run['round'], run['model'], run['mode']))
     sort_execution.extend(
-        (s['measuredAt'], run['round'], run['model'], run['mode'])
+        (s['measuredAt'], format, run['round'], run['model'], run['mode'])
         for s in run['sort']
         if s.get('protocol') == 'radix-sort-diagnostic-v1' and not run.get('retry')
     )
     # Every round derives its order from round one's order for the same model.
-    model = run['model']
+    model = (format, run['model'])
     if run['round'] == 1:
         assert initial_orders.setdefault(model, run['order']) == run['order'], name
     if model in initial_orders:
         assert run['order'] == round_order(initial_orders[model], run['round']), name
 
 if not partial:
-    expected_execution = [
-        (r, model, mode)
-        for r in range(1, round_count + 1)
-        for model in config['models']
-        if model in models
-        for mode in round_order(initial_orders[model], r)
-        if (r, model, mode) not in retried
-    ]
-    assert all(set(initial_orders[m]) == set(backends) for m in models)
-    assert [entry[1:] for entry in sorted(execution)] == expected_execution, (
-        'Execution order does not match the schedule'
-    )
-    if sort_execution:
-        assert [entry[1:] for entry in sorted(sort_execution)] == [
-            e for e in expected_execution if e[2].startswith('radix-')
-        ], 'Radix sort supplement order mismatch'
+    for format, spec in formats.items():
+        expected_execution = [
+            (format, r, model, mode)
+            for r in range(1, round_count + 1)
+            for model in config['models']
+            if model in models
+            for mode in round_order(initial_orders[(format, model)], r)
+            if (format, r, model, mode) not in retried | skipped
+        ]
+        assert all(set(initial_orders[(format, m)]) == set(spec['backends']) for m in models)
+        assert [entry[1:] for entry in sorted(execution) if entry[1] == format] == expected_execution, (
+            format,
+            'Execution order does not match the schedule',
+        )
+        supplement = [entry[1:] for entry in sorted(sort_execution) if entry[1] == format]
+        if supplement:
+            assert supplement == [e for e in expected_execution if e[3].startswith('radix-')], (
+                'Radix sort supplement order mismatch'
+            )
 
 summary = {
     'protocol': config['protocol'],
     'complete': actual == expected,
-    'runs': len(actual),
+    'formats': formats,
+    'sogInputs': sog_inputs,
+    'preservedPlyVersions': json.loads((HARNESS / 'baseline-ply-v5.json').read_text())['versions'],
+    'records': len(actual),
+    'runs': successful,
+    'exclusions': list(excluded.values()),
+    'loadFailures': [{'name': r['name'], 'reason': r['failure']} for r in runs.values() if load_failure(r)],
+    'skippedRecords': len(skipped),
     'performanceGroups': groups,
     'measuredFrames': frames,
     'sortGroups': sort_groups,
@@ -243,7 +302,7 @@ summary = {
     'radixSortSupplementRuns': len(sort_execution),
     'radixDefaultSortBits': 24,
     'renderingSettingsAdjustedAsCloselyAsPossible': True,
-    'allSortedCasesRadial': True,
+    'allSortedCasesRadialExceptAholo': True,
     'fourViewsPerVariant': True,
     'stochasticBackends': config['stochasticBackends'],
     'gslStochasticFrontToBackSort': True,
