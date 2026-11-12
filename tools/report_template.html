@@ -645,9 +645,9 @@
           </span>
         </h1>
         <p data-i18n="lede" class="lede">
-          Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with
-          settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view depth
-          only); stochastic groups keep native behavior without temporal accumulation.
+          Rendering, sorting and memory on matched PLY and SOG inputs, cameras and full models at Retina resolution,
+          with settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view
+          depth only); stochastic groups keep native behavior without temporal accumulation.
         </p>
         <aside class="excluded">
           <strong data-i18n="excludedTitle">Not benchmarked: Babylon.js and three.js</strong>
@@ -686,7 +686,16 @@
           </div>
         </div>
       </header>
+      <p class="note" id="cohortNote"></p>
+      <p class="note" id="availabilityNote"></p>
       <nav class="filters" aria-label="Report filters">
+        <label>
+          <span data-i18n="formatLabel">Input format</span>
+          <select id="format">
+            <option value="ply">PLY</option>
+            <option value="sog">SOG · codebook</option>
+          </select>
+        </label>
         <label>
           <span data-i18n="modelLabel">Model</span>
           <select id="model">
@@ -893,12 +902,14 @@
           </a>
           ·
           <a
+            id="gslSortSource"
             href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/rust/gaussian-splat-rs/src/sort.rs"
           >
             Gaussian Splat Lite Worker sort source
           </a>
           ·
           <a
+            id="gslDepthSource"
             href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v1.6.2/src/rendering/webgpu/ProjectionKernel.js"
           >
             Gaussian Splat Lite GPU depth keys
@@ -907,6 +918,10 @@
       </section>
       <section>
         <h2 data-i18n="memoryTitle">Memory</h2>
+        <div id="codebookDetails">
+          <p class="note" id="codebookNote"></p>
+          <div class="table-wrap" id="codebookTable"></div>
+        </div>
         <p data-i18n="memoryMethod" class="note">
           Per post-GC snapshot: JS heap + ArrayBuffer/external storage + WASM capacity across the main thread and live
           Workers. Maximum over sorted cases per run, then the median of three runs. GPU allocation is separate;
@@ -925,7 +940,8 @@
         <div id="memoryTable" class="table-wrap"></div>
         <p data-i18n="heapMeaning" class="note">
           An accounting sum (ArrayBuffer includes external-string storage; WASM is live Worker linear-memory capacity),
-          not process RSS or deduplicated physical memory. Components are in harness/results.
+          not process RSS or deduplicated physical memory. Native ImageBitmap/codec storage is not included. Components
+          are in harness/results.
         </p>
         <p data-i18n="gpuMeaning" class="note">
           GPU allocation counts buffer, texture and renderbuffer capacity, excluding query buffers, driver overhead,
@@ -967,8 +983,8 @@
           <p>
             <strong data-i18n="inputTitle">Full inputs, fixed resolution</strong>
             <span data-i18n="inputTitleBody">
-              Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY/SH3, 3024 ×
-              1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.
+              Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY and SOG / SH3,
+              3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.
             </span>
           </p>
           <p>
@@ -1004,7 +1020,7 @@
             <strong data-i18n="editorTitle">SuperSplat Viewer</strong>
             <span data-i18n="editorBody">
               Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera
-              and resolution; post effects and performance scaling off; model rotation reset to match the PLY.
+              and resolution; post effects and performance scaling off; model rotation reset to match the input.
             </span>
           </p>
           <p>
@@ -1027,9 +1043,9 @@
           <p>
             <strong data-i18n="supportTitle">Supported features</strong>
             <span data-i18n="supportTitleBody">
-              All nine backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run
-              raw stochastic. Main and second views are tested static and moving: a closer side view, or the entrance
-              side of WillaGlobalPoland.
+              Nine PLY and up to seven SOG backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite
+              backends also run raw stochastic. Main and second views are tested static and moving: a closer side view,
+              or the entrance side of WillaGlobalPoland.
             </span>
           </p>
         </div>
@@ -1048,7 +1064,10 @@
             </a>
             ·
             <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/releases/tag/v1.6.2">
-              Gaussian Splat Lite v1.6.2
+              Gaussian Splat Lite v1.6.2 (PLY)
+            </a>
+            <a href="https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/releases/tag/v1.7.0">
+              Gaussian Splat Lite v1.7.0 (SOG)
             </a>
             ·
             <a href="https://claude.ai/code/artifact/b2f3c482-3d9d-481e-ab0a-0d97620c09a2">
@@ -1077,13 +1096,28 @@
       const I18N = {
         eyebrow: ['Measured locally · Apple M5 Pro', '本地实测 · Apple M5 Pro'],
         lede: [
-          'Rendering, sorting and memory on the same PLY files, cameras and full models at Retina resolution, with settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view depth only); stochastic groups keep native behavior without temporal accumulation.',
-          '同一 PLY、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存，设置尽量对齐。深度排序组按径向距离排序（Aholo Viewer 仅支持视深排序）；随机渲染组保留原生行为，不做时间累积。',
+          'Rendering, sorting and memory on matched PLY and SOG inputs, cameras and full models at Retina resolution, with settings aligned as closely as possible. Sorted groups use radial ordering, except Aholo Viewer (view depth only); stochastic groups keep native behavior without temporal accumulation.',
+          '配对的 PLY / SOG、同一相机、完整模型，在 Retina 分辨率下对比渲染、排序与内存，设置尽量对齐。深度排序组按径向距离排序（Aholo Viewer 仅支持视深排序）；随机渲染组保留原生行为，不做时间累积。',
         ],
         pixels: ['1512 × 982 CSS px · DPR 2 · No MSAA', '1512 × 982 CSS px · DPR 2 · 无 MSAA'],
         chip: ['M5 Pro · 16 GPU cores', 'M5 Pro · 16 核 GPU'],
         ram: ['48 GiB unified memory · macOS 26.7', '48 GiB 统一内存 · macOS 26.7'],
         modelLabel: ['Model', '模型'],
+        formatLabel: ['Input format', '输入格式'],
+        excludedLoad: ['Excluded after native loading failed', '原生加载失败，未纳入比较'],
+        cohortNote: [
+          'PLY results are preserved from the earlier run. SOG is a separate supplement with native loaders and SH3 codebooks. Versions and dates are shown per format; cross-format changes do not isolate codebook performance.',
+          'PLY 保留此前结果；SOG 是独立补测，使用原生加载器及 SH3 码表。各格式分别标明版本和日期，跨格式差异不能单独归因于 codebook。',
+        ],
+        codebookNote: [
+          'All SOG backends load the same quantized file. Shared-codebook means the source keeps SH palette lookup; renderers may still allocate per-splat work buffers. Spark and Aholo expand SH into per-splat storage. Radix 0.0.1 is excluded because its loader does not support SOG.',
+          '所有 SOG 后端加载同一量化文件。共享码表表示源数据保留 SH 索引查表，渲染器仍可能分配逐 splat 工作缓冲。Spark 和 Aholo 将 SH 展开为逐 splat 数据。Radix 0.0.1 加载器不支持 SOG，因此不参与本组。',
+        ],
+        sharedCodebook: ['Shared SH codebook', '共享 SH 码表'],
+        perSplat: ['Expanded per splat', '逐 splat 展开'],
+        shStorage: ['SH source storage', 'SH 源数据存储'],
+        paletteBytes: ['Packed palette (MiB)', '打包码表（MiB）'],
+        labelBytes: ['Labels (MiB)', '标签（MiB）'],
         hotel: ['HotelFareza · 12.20M', 'HotelFareza · 1220 万'],
         elevator: ['Elevator · 2.80M', 'Elevator · 279 万'],
         scenarioLabel: ['Scene', '场景'],
@@ -1178,8 +1212,8 @@
         heapChartTitle: ['JS heap + ArrayBuffer + WASM · MiB', 'JS heap + ArrayBuffer + WASM · MiB'],
         gpuChartTitle: ['Explicit GPU allocation · MiB', '显式 GPU 分配 · MiB'],
         heapMeaning: [
-          'An accounting sum (ArrayBuffer includes external-string storage; WASM is live Worker linear-memory capacity), not process RSS or deduplicated physical memory. Components are in harness/results.',
-          '这是统计项之和（ArrayBuffer 含外部字符串存储，WASM 为存活 Worker 线性内存容量），不是进程 RSS 或去重后的物理内存。分项数据见 harness/results。',
+          'An accounting sum (ArrayBuffer includes external-string storage; WASM is live Worker linear-memory capacity), not process RSS or deduplicated physical memory. Native ImageBitmap/codec storage is not included. Components are in harness/results.',
+          '这是统计项之和（ArrayBuffer 含外部字符串存储，WASM 为存活 Worker 线性内存容量），不是进程 RSS 或去重后的物理内存，也不含 ImageBitmap／图像解码器的原生存储。分项数据见 harness/results。',
         ],
         gpuMeaning: [
           'GPU allocation counts buffer, texture and renderbuffer capacity, excluding query buffers, driver overhead, alignment and the swapchain. It is allocated capacity, not physical VRAM (Apple uses unified memory). Browser RSS is kept only as raw diagnostics.',
@@ -1200,8 +1234,8 @@
         boundsTitle: ['Measurement scope', '测量边界'],
         inputTitle: ['Full inputs, fixed resolution', '完整输入与固定画幅'],
         inputTitleBody: [
-          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY/SH3, 3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.',
-          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 个 splat。完整 PLY/SH3，3024 × 1964 物理像素，垂直 FOV 45°，near 0.1，far 3000，背景 #101418。',
+          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 splats. Full PLY and SOG / SH3, 3024 × 1964 physical pixels, vertical FOV 45°, near 0.1, far 3000, background #101418.',
+          'Elevator 2,796,503 · HotelFareza 12,202,010 · WillaGlobalPoland 14,469,103 个 splat。完整 PLY 和 SOG / SH3，3024 × 1964 物理像素，垂直 FOV 45°，near 0.1，far 3000，背景 #101418。',
         ],
         sparkTitle: ['Spark source precision', 'Spark 源数据精度'],
         sparkTitleBody: [
@@ -1220,8 +1254,8 @@
         ],
         supportTitle: ['Supported features', '可用功能'],
         supportTitleBody: [
-          'All nine backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run raw stochastic. Main and second views are tested static and moving: a closer side view, or the entrance side of WillaGlobalPoland.',
-          '九个后端均测试深度排序；PlayCanvas WebGPU 与两个 Gaussian Splat Lite 后端另测原始随机渲染。主视角与第二视角各测静止和移动：第二视角为近景侧视角，WillaGlobalPoland 为入口一侧。',
+          'Nine PLY and up to seven SOG backends run sorted rendering; PlayCanvas WebGPU and both Gaussian Splat Lite backends also run raw stochastic. Main and second views are tested static and moving: a closer side view, or the entrance side of WillaGlobalPoland.',
+          '九个 PLY 后端与最多七个 SOG 后端测试深度排序；PlayCanvas WebGPU 与两个 Gaussian Splat Lite 后端另测原始随机渲染。主视角与第二视角各测静止和移动：第二视角为近景侧视角，WillaGlobalPoland 为入口一侧。',
         ],
         excludedTitle: ['Not benchmarked: Babylon.js and three.js', '未纳入测试：Babylon.js 与 three.js'],
         excludedBabylon: [
@@ -1301,8 +1335,8 @@
         ],
         editorTitle: ['SuperSplat Viewer', 'SuperSplat Viewer'],
         editorBody: [
-          'Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling off; model rotation reset to match the PLY.',
-          '通过公开 API 创建，使用固定版本的 Engine。深度排序、large 工作缓冲、统一相机与分辨率；关闭后期效果与性能缩放；重置模型旋转以匹配 PLY。',
+          'Created through the public API with the pinned Engine. Sorted rendering, large work buffers, shared camera and resolution; post effects and performance scaling off; model rotation reset to match the input.',
+          '通过公开 API 创建，使用固定版本的 Engine。深度排序、large 工作缓冲、统一相机与分辨率；关闭后期效果与性能缩放；重置模型旋转以匹配输入。',
         ],
         closeMoving: ['Moving · second view', '移动 · 第二视角'],
         sortedGroup: ['Depth-sorted rendering', '深度排序渲染'],
@@ -1360,10 +1394,17 @@
       const digitsOf = unit => (unit === 'MiB' ? 1 : 2);
       const aggregateMetric = (rows, key) => median(rows.map(r => r[key]));
       function current() {
-        return { model: $('model').value, scenario: $('scenario').value, metric: $('metric').value };
+        return {
+          format: $('format').value,
+          model: $('model').value,
+          scenario: $('scenario').value,
+          metric: $('metric').value,
+        };
       }
       function rowsFor(s, variant) {
-        return DATA.cases.filter(c => c.model === s.model && c.scenario === s.scenario && c.variant === variant);
+        return DATA.cases.filter(
+          c => c.format === s.format && c.model === s.model && c.scenario === s.scenario && c.variant === variant,
+        );
       }
       function series(rows, key) {
         const map = new Map();
@@ -1422,6 +1463,11 @@
           key = s.metric,
           unit = unitOf(key);
         $('metricDirection').textContent = tr(unit === 'FPS' ? 'higher' : 'lower');
+        const excluded = DATA.exclusions.filter(e => e.format === s.format && e.model === s.model);
+        $('availabilityNote').hidden = !excluded.length;
+        $('availabilityNote').textContent = excluded
+          .map(e => `${tr('excludedLoad')}: ${names[e.mode]} — ${e.reason}`)
+          .join(' · ');
         const groups = [
           { variant: 'sorted', label: 'sortedGroup', chart: 'mainChart', table: 'mainTable' },
           { variant: 'stochastic', label: 'rawGroup', chart: 'rawChart', table: 'rawTable' },
@@ -1460,7 +1506,7 @@
                 : '';
             })
             .join('') + `<div><b>${DATA.rounds} ${tr('independentRuns')}</b><p>${tr('repeatNote')}</p></div>`;
-        const sorts = DATA.sort.filter(c => c.model === s.model);
+        const sorts = DATA.sort.filter(c => c.format === s.format && c.model === s.model);
         const sortItems = series(sorts, 'gpuSortP50');
         $('sortSupplement').hidden = !sorts.some(row => row.diagnosticProtocol === 'radix-sort-diagnostic-v1');
         $('sortSupplement').textContent = tr('sortSupplement');
@@ -1477,7 +1523,7 @@
             ...['workerP50', 'rpcP50', 'asyncP50', 'gpuSortP50'].map(k => metricCell(item, sortItems, k)),
           ]),
         );
-        const mem = DATA.memory.filter(c => c.model === s.model);
+        const mem = DATA.memory.filter(c => c.format === s.format && c.model === s.model);
         bars('heapMemory', series(mem, 'cpuMemoryMiB'), 'MiB');
         bars('gpuMemory', series(mem, 'gpuMiB'), 'MiB');
         const memoryItems = series(mem, 'cpuMemoryMiB');
@@ -1489,14 +1535,45 @@
             ...['cpuMemoryMiB', 'gpuMiB'].map(k => metricCell(item, memoryItems, k, 'MiB', 1)),
           ]),
         );
+        $('codebookDetails').hidden = s.format !== 'sog';
+        const source = DATA.sogInputs[s.model];
+        $('codebookNote').textContent =
+          `${source.codebookEntries.toLocaleString()} SH3 entries · ${(source.bytes / 2 ** 20).toFixed(1)} MiB SOG · ${source.generator}. ` +
+          tr('codebookNote');
+        const storage = DATA.runs.filter(r => r.format === 'sog' && r.model === s.model && r.round === 1);
+        table(
+          'codebookTable',
+          ['renderer', 'shStorage', 'paletteBytes', 'labelBytes'],
+          storage.map(r => [
+            names[r.mode],
+            tr(r.shStorage.kind === 'shared-codebook' ? 'sharedCodebook' : 'perSplat'),
+            r.shStorage.paletteBytes ? fmt(r.shStorage.paletteBytes / 2 ** 20, 2) : '—',
+            r.shStorage.labelBytes ? fmt(r.shStorage.labelBytes / 2 ** 20, 2) : '—',
+          ]),
+        );
+        const cohort = DATA.cohorts[s.format],
+          versions = cohort.versions;
+        const gslSource = `https://github.com/WilliamLiu-1997/Gaussian-Splat-Lite/blob/v${versions.gsl}/`;
+        $('gslSortSource').href = gslSource + 'rust/gaussian-splat-rs/src/sort.rs';
+        $('gslDepthSource').href = gslSource + 'src/rendering/webgpu/ProjectionKernel.js';
+        $('browser').textContent = [...new Set(cohort.browsers.map(version => 'Chrome ' + version.split('.')[0]))].join(
+          ' / ',
+        );
+        $('cohortNote').textContent =
+          `${s.format.toUpperCase()} · GSL ${versions.gsl} · ${cohort.dates.join(' / ')} (${DATA.testTimeZone}). ` +
+          tr('cohortNote');
         renderGallery();
         const orders = [
-          ...new Map(DATA.runs.filter(run => run.model === s.model).map(run => [run.round, run.order])).entries(),
+          ...new Map(
+            DATA.runs
+              .filter(run => run.format === s.format && run.model === s.model)
+              .map(run => [run.round, run.order]),
+          ).entries(),
         ].sort((a, b) => a[0] - b[0]);
         $('provenance').innerHTML =
-          `<p class="note">Spark ${DATA.versions.spark} · Gaussian Splat Lite ${DATA.versions.gsl} · three.js ${DATA.versions.three} · PlayCanvas ${DATA.versions.playcanvas} · SuperSplat Viewer ${DATA.versions.viewer} · Radix ${DATA.versions.radix} (Three.js ${DATA.versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round, order]) => tr('round') + ' ' + round + ': ' + order.map(mode => names[mode]).join(' → ')).join('<br>')}</p>`;
+          `<p class="note">${s.format.toUpperCase()} · ${cohort.dates.join(' / ')} (${DATA.testTimeZone})<br>Spark ${versions.spark} · Gaussian Splat Lite ${versions.gsl} · three.js ${versions.three} · PlayCanvas ${versions.playcanvas} · SuperSplat Viewer ${versions.viewer} · Aholo Viewer ${versions.aholo} · Radix ${versions.radix} (Three.js ${versions.threeRadix})<br>${tr('rawNote')}</p><p class="note"><b>${tr('executionOrder')}</b><br>${orders.map(([round, order]) => tr('round') + ' ' + round + ': ' + order.map(mode => names[mode]).join(' → ')).join('<br>')}</p>`;
         $('modelCount').textContent = (DATA.models[s.model].count / 1e6).toFixed(2) + 'M';
-        $('modelName').textContent = DATA.models[s.model].name + ' · SH3';
+        $('modelName').textContent = DATA.models[s.model].name + ' · ' + s.format.toUpperCase() + ' · SH3';
         $('roundLabel').textContent = DATA.rounds + ' ' + tr('independentRuns') + ' · ' + tr('frameSummary');
         const dateFormat = new Intl.DateTimeFormat($('language').value === 'zh' ? 'zh-CN' : 'en-GB', {
           year: 'numeric',
@@ -1504,7 +1581,7 @@
           day: 'numeric',
           timeZone: 'UTC',
         });
-        const dates = [DATA.testDates[0], DATA.testDates.at(-1)]
+        const dates = [cohort.dates[0], cohort.dates.at(-1)]
           .filter((date, i, all) => i === 0 || date !== all[0])
           .map(date => dateFormat.format(new Date(date + 'T12:00:00Z')))
           .join(' – ');
@@ -1522,15 +1599,19 @@
       }
       function renderGallery() {
         const model = $('model').value,
+          format = $('format').value,
           variant = $('imageVariant').value;
-        $('gallery').innerHTML = modes
+        $('gallery').innerHTML = DATA.formats[format].backends
+          .filter(mode => !DATA.exclusions.some(e => e.format === format && e.model === model && e.mode === mode))
           .map(mode => {
-            const img = DATA.images.find(i => i.model === model && i.mode === mode && i.variant === variant);
+            const img = DATA.images.find(
+              i => i.format === format && i.model === model && i.mode === mode && i.variant === variant,
+            );
             return `<figure>${img ? `<img src="${img.thumb}" data-full="${img.path}" alt="${names[mode]} ${variant}" loading="lazy">` : '<div class="empty">' + tr('unsupported') + '</div>'}<figcaption><span>${dot(mode)}${names[mode]}</span>${img ? `<a href="${img.path}" target="_blank">${tr('original')}</a>` : ''}</figcaption></figure>`;
           })
           .join('');
         const q = DATA.quality
-          .filter(q => q.model === model && q.variant === variant)
+          .filter(q => q.format === format && q.model === model && q.variant === variant)
           .sort((a, b) => modes.indexOf(a.mode) - modes.indexOf(b.mode));
         table(
           'qualityTable',
@@ -1556,7 +1637,7 @@
         $('fullImage').alt = $('language').value === 'zh' ? '原始渲染截图' : 'Original renderer capture';
         render();
       }
-      for (const id of ['model', 'scenario', 'metric']) $(id).addEventListener('change', render);
+      for (const id of ['format', 'model', 'scenario', 'metric']) $(id).addEventListener('change', render);
       $('language').onchange = setLanguage;
       $('imageVariant').onchange = renderGallery;
       $('close').onclick = () => $('lightbox').classList.remove('open');
@@ -1568,7 +1649,6 @@
       });
       $('model').replaceChildren(...Object.entries(DATA.models).map(([id, model]) => new Option(model.name, id)));
       $('model').value = DATA.models.hotel ? 'hotel' : Object.keys(DATA.models)[0];
-      $('browser').textContent = 'Chrome ' + DATA.browser.split('.')[0];
       setLanguage();
     </script>
   </body>

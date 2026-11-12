@@ -1,0 +1,174 @@
+{
+  "name": "willa-sog-spark-gl-r2",
+  "mode": "spark-gl",
+  "model": "willa",
+  "format": "sog",
+  "round": 2,
+  "order": [
+    "aholo-gl",
+    "pc-gl",
+    "pc-gpu",
+    "viewer-gpu",
+    "gsl-gl",
+    "gsl-gpu",
+    "spark-gl"
+  ],
+  "config": {
+    "protocol": "nine-backends-four-views-one-frame-in-flight-v5",
+    "logicalWidth": 1512,
+    "logicalHeight": 982,
+    "dpr": 2,
+    "width": 3024,
+    "height": 1964,
+    "backends": [
+      "spark-gl",
+      "radix-gpu",
+      "radix-gl",
+      "gsl-gpu",
+      "gsl-gl",
+      "viewer-gpu",
+      "pc-gpu",
+      "pc-gl",
+      "aholo-gl"
+    ],
+    "stochasticBackends": [
+      "gsl-gpu",
+      "gsl-gl",
+      "pc-gpu"
+    ],
+    "warmupSeconds": 2,
+    "sampleSeconds": {
+      "static": 5,
+      "moving": 8
+    },
+    "motionAmplitudeDegrees": 45,
+    "motionPeriodSeconds": 8,
+    "models": {
+      "elevator": {
+        "name": "Elevator",
+        "path": "../models/Elevator.ply",
+        "count": 2796503,
+        "target": [
+          -0.9502010345,
+          -6.8692420721,
+          2.7221307755
+        ],
+        "offset": [
+          10.0575225395,
+          -6.7050150264,
+          -18.4387913225
+        ],
+        "secondView": {
+          "angle": 0.55,
+          "scale": 0.65
+        }
+      },
+      "hotel": {
+        "name": "HotelFareza",
+        "path": "../models/HotelFareza.ply",
+        "count": 12202010,
+        "target": [
+          -3.4270347770845504,
+          -2.901584617356381,
+          12.751990850542853
+        ],
+        "offset": [
+          3,
+          -3,
+          28
+        ],
+        "secondView": {
+          "angle": 0.55,
+          "scale": 0.65
+        }
+      },
+      "willa": {
+        "name": "WillaGlobalPoland",
+        "path": "../models/WillaGlobalPoland.ply",
+        "count": 14469103,
+        "target": [
+          7.5,
+          14,
+          12.5
+        ],
+        "offset": [
+          15,
+          -15,
+          30
+        ],
+        "secondView": {
+          "target": [
+            7.7,
+            15,
+            10.8
+          ],
+          "offset": [
+            -13.2,
+            -11.5,
+            -40.4
+          ]
+        }
+      }
+    },
+    "versions": {
+      "gsl": "1.7.0",
+      "spark": "2.4.0",
+      "radix": "0.0.1",
+      "viewer": "1.42.0",
+      "three": "0.187.0",
+      "playcanvas": "2.24.0-beta.30",
+      "threeRadix": "0.186.1",
+      "aholo": "1.12.0"
+    },
+    "commits": {
+      "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+    },
+    "formats": {
+      "ply": {
+        "backends": [
+          "spark-gl",
+          "radix-gpu",
+          "radix-gl",
+          "gsl-gpu",
+          "gsl-gl",
+          "viewer-gpu",
+          "pc-gpu",
+          "pc-gl",
+          "aholo-gl"
+        ]
+      },
+      "sog": {
+        "backends": [
+          "spark-gl",
+          "gsl-gpu",
+          "gsl-gl",
+          "viewer-gpu",
+          "pc-gpu",
+          "pc-gl",
+          "aholo-gl"
+        ]
+      }
+    }
+  },
+  "input": {
+    "model": "willa",
+    "sourceSha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
+    "file": "WillaGlobalPoland.sog",
+    "sha256": "bbf308c949f78cfb641c9059615246da3bece5d550ad2f6b29c9d6f53ebd48b7",
+    "bytes": 171830520,
+    "splats": 14469103,
+    "version": 2,
+    "shBands": 3,
+    "codebookEntries": 65536,
+    "generator": "splat-transform v3.6.4",
+    "shIterations": 10,
+    "gpu": 0,
+    "conversionSeconds": 217.419
+  },
+  "cases": [],
+  "sort": [],
+  "skipped": {
+    "failedRun": "willa-sog-spark-gl-r1",
+    "reason": "Error: Uncaught Error: unreachable"
+  }
+}

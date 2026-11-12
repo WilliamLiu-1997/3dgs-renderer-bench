@@ -4,7 +4,7 @@ import { waitForGpu } from '/lab/frame-timing.js';
 import { tagPlayCanvasSort } from './timer.js';
 
 // PlayCanvas Engine: GPU sorting on WebGPU, CPU Worker sorting on WebGL2.
-export async function createPlayCanvas(config, mode, model, onDevice) {
+export async function createPlayCanvas(config, mode, model, onDevice, format = 'ply') {
   const gpu = mode === 'pc-gpu';
   const canvas = document.createElement('canvas');
   document.body.append(canvas);
@@ -39,7 +39,7 @@ export async function createPlayCanvas(config, mode, model, onDevice) {
   app.root.addChild(camera);
   const start = performance.now();
   const asset = await new Promise((resolve, reject) =>
-    app.assets.loadFromUrlAndFilename('/models/' + model + '.ply', model + '.ply', 'gsplat', (error, value) =>
+    app.assets.loadFromUrlAndFilename(`/models/${model}.${format}`, `${model}.${format}`, 'gsplat', (error, value) =>
       error ? reject(Error(String(error))) : resolve(value),
     ),
   );
@@ -94,7 +94,12 @@ export async function createPlayCanvas(config, mode, model, onDevice) {
     state: () => ({
       backend: gpu ? 'webgpu' : 'webgl2',
       sourceCount: asset.resource.numSplats,
-      sh: asset.resource.shBands,
+      sh: asset.resource.gsplatData.shBands,
+      shStorage: {
+        kind: asset.resource.gsplatData.sh_centroids ? 'shared-codebook' : 'per-splat',
+        sourceType: asset.resource.constructor.name,
+        entries: asset.resource.gsplatData.meta?.shN?.count ?? 0,
+      },
       stochastic: params.stochastic,
       dither: params.dither,
       spatialResolve: false,

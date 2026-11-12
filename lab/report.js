@@ -157,6 +157,10 @@ export async function createReport(report) {
       .join(' · ')}`,
     13,
   );
+  if (report.source.format === 'sog')
+    paragraph(
+      'Native SOG input. Compatible backends load the same SOG directly; Radix 0.0.1 is skipped. SH codebooks are retained or expanded by each renderer.',
+    );
   if (report.source.conversion)
     paragraph(
       `SPZ → PLY: ${report.source.conversion.library}, ${fmt(report.source.conversion.ms)} ms, ${(report.source.conversion.outputBytes / 1048576).toFixed(1)} MiB output, SH retained. Converted locally; all backends load the same PLY. Native SPZ decoding is not compared.`,

@@ -77,7 +77,7 @@ export async function createViewerAdapter(lib, pc, canvas, commonCamera, url, fi
     viewer,
     loadMs,
     count: asset.resource.numSplats,
-    sh: asset.resource.shBands,
+    sh: asset.resource.gsplatData.shBands,
     bounds: { center: [center.x, center.y, center.z], radius: halfExtents.length() },
     info: {
       version: loaded.version,
@@ -85,6 +85,11 @@ export async function createViewerAdapter(lib, pc, canvas, commonCamera, url, fi
       engineVersion: pc.version,
       engineCommit: pc.revision,
       backend: 'WebGPU',
+      shStorage: {
+        kind: asset.resource.gsplatData.sh_centroids ? 'shared-codebook' : 'per-splat',
+        sourceType: asset.resource.constructor.name,
+        entries: asset.resource.gsplatData.meta?.shN?.count ?? 0,
+      },
       settings: {
         ...Object.fromEntries(Object.keys(settings).map(key => [key, params[key]])),
         dataFormat: params.dataFormat,

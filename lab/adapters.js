@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createRadix } from './radix-adapter.js';
 import { createViewerAdapter } from './viewer-adapter.js';
 import { createAholo } from './aholo-adapter.js';
-import { PACKAGES, exactVersion } from './config.js';
+import { PACKAGES, exactVersion, supportsFormat, modelFormat } from './config.js';
 
 export async function loadLibrary(key, version) {
   if (!exactVersion(version)) throw Error('Enter an exact version, e.g. 2.23.0-beta.20');
@@ -37,6 +37,8 @@ function requireFields(object, values) {
 }
 
 export async function createAdapter(backend, versions, settings, canvas, camera, file, size) {
+  if (!supportsFormat(backend, modelFormat(file.name), versions[backend.lib]))
+    throw Error('This renderer version does not support native SOG');
   const loaded = await loadLibrary(backend.lib, versions[backend.lib]);
   const { lib } = loaded;
   const gpu = backend.backend === 'WebGPU';
@@ -105,7 +107,13 @@ async function createThree(lib, spark, gpu, canvas, camera, url, filename, size,
   if (spark) requireFields(gs, { accumExtSplats: extended });
   scene.add(gs);
   const start = performance.now();
-  const mesh = new lib.SplatMesh({ url, fileName: filename, ...(spark ? { extSplats: extended } : {}) });
+  const mesh = new lib.SplatMesh({
+    url,
+    fileName: filename,
+    ...(spark
+      ? { extSplats: extended, ...(/\.sog$/i.test(filename) ? { fileType: lib.SplatFileType.PCSOGSZIP } : {}) }
+      : {}),
+  });
   scene.add(mesh);
   await mesh.initialized;
   const loadMs = performance.now() - start;
@@ -207,6 +215,10 @@ async function createPlayCanvas(pc, gpu, canvas, commonCamera, url, filename, si
       moduleURL: loaded.moduleURL,
       backend: gpu ? 'WebGPU' : 'WebGL2',
       settings: { ...Object.fromEntries(Object.keys(common).map(k => [k, params[k]])) },
+      shStorage: {
+        kind: asset.resource.gsplatData.sh_centroids ? 'shared-codebook' : 'per-splat',
+        entries: asset.resource.gsplatData.meta?.shN?.count ?? 0,
+      },
       sorting: gpu ? 'GPU' : 'CPU Worker',
       outputColorSpace: 'sRGB / linear tone mapping',
     },

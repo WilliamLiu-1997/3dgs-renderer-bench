@@ -4,7 +4,7 @@ import { PRESETS } from '/lab/config.js';
 import { sleep } from './timer.js';
 
 // Spark (WebGL2) and Gaussian Splat Lite (WebGL2 / WebGPU) through Three.js.
-export async function createThree(config, mode, model, onDevice) {
+export async function createThree(config, mode, model, onDevice, format = 'ply') {
   const spark = mode === 'spark-gl',
     gpu = mode === 'gsl-gpu';
   // Match the GSL viewer: native WebGPU blends in sRGB; WebGL outputs sRGB.
@@ -51,7 +51,7 @@ export async function createThree(config, mode, model, onDevice) {
   scene.add(gs);
   const start = performance.now();
   const mesh = new lib.SplatMesh({
-    url: '/models/' + model + '.ply',
+    url: `/models/${model}.${format}`,
     extSplats: true,
     onProgress: e => (window.progress = { loaded: e.loaded, total: e.total, stage: e.stage }),
   });
@@ -145,6 +145,14 @@ export async function createThree(config, mode, model, onDevice) {
         temporalResolve: null,
         fastSort: spark ? null : gs.fastSort,
         sourceType: spark ? mesh.extSplats.constructor.name : 'Splats',
+        shStorage: spark
+          ? { kind: 'per-splat', sourceType: mesh.extSplats.constructor.name }
+          : {
+              kind: mesh.splats.palette ? 'shared-codebook' : 'per-splat',
+              paletteBytes: mesh.splats.palette?.byteLength ?? 0,
+              labelBytes: mesh.splats.extra.shLabels?.byteLength ?? 0,
+              paletteStride: mesh.splats.palette?.stride ?? 0,
+            },
         accumulatorExtended: spark ? gs.accumExtSplats : true,
         stochastic: spark ? false : gs.stochasticActive,
         stochasticSort: spark ? null : gs.stochasticSort,

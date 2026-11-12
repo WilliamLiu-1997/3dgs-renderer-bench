@@ -50,7 +50,7 @@
     }
   },
   "versions": {
-    "gsl": "1.6.2",
+    "gsl": "1.7.0",
     "spark": "2.4.0",
     "radix": "0.0.1",
     "viewer": "1.42.0",
@@ -61,5 +61,23 @@
   },
   "commits": {
     "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+  },
+  "formats": {
+    "ply": {
+      "backends": [
+        "spark-gl",
+        "radix-gpu",
+        "radix-gl",
+        "gsl-gpu",
+        "gsl-gl",
+        "viewer-gpu",
+        "pc-gpu",
+        "pc-gl",
+        "aholo-gl"
+      ]
+    },
+    "sog": {
+      "backends": ["spark-gl", "gsl-gpu", "gsl-gl", "viewer-gpu", "pc-gpu", "pc-gl", "aholo-gl"]
+    }
   }
 }

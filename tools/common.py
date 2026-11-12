@@ -39,7 +39,53 @@ def load_config():
 
 
 def results_dir():
-    return Path(os.environ.get('RESULTS_DIR', HARNESS / 'results-current'))
+    return (HARNESS / os.environ.get('RESULTS_DIR', 'results-current')).resolve()
+
+
+def source_format(run):
+    return run.get('format', 'ply')
+
+
+def run_pair(run):
+    return source_format(run), run['model'], run['mode']
+
+
+def load_failure(run):
+    return (
+        source_format(run) == 'sog'
+        and run.get('failure')
+        and run.get('debug', {}).get('phase') == 'loading'
+        and not run.get('initial')
+        and not run['cases']
+        and not run['sort']
+    )
+
+
+def exclusions(runs):
+    # A renderer/model pair needs all rounds to participate in ranking.
+    return {
+        run_pair(run): {
+            'format': source_format(run),
+            'model': run['model'],
+            'mode': run['mode'],
+            'reason': run['failure'],
+        }
+        for run in runs
+        if load_failure(run)
+    }
+
+
+def run_name(model, mode, round, format):
+    return f'{model}{"-" + format if format != "ply" else ""}-{mode}-r{round}'
+
+
+def check_config(run, config):
+    # The original PLY cohort predates format selection and retains its tested versions.
+    expected = config if 'format' in run else json.loads((HARNESS / 'baseline-ply-v5.json').read_text())
+    if run['config'] != expected:
+        raise ValueError('Stale configuration: ' + run['name'])
+    if source_format(run) not in config['formats']:
+        raise ValueError('Unknown input format: ' + run['name'])
 
 
 def run_files(folder):

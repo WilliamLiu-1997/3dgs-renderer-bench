@@ -7,6 +7,7 @@ import { gpuTimer, sleep } from './timer.js';
 const query = new URLSearchParams(location.search);
 const mode = query.get('mode') || 'gsl-gl';
 const model = query.get('model') || 'elevator';
+const format = query.get('format') || 'ply';
 const config = await (await fetch('/config.json')).json();
 window.phase = 'loading';
 
@@ -21,10 +22,10 @@ function onDevice(device) {
 
 async function createAdapter() {
   if (mode.startsWith('radix-') || mode.startsWith('aholo-') || mode === 'viewer-gpu')
-    return (await import('./shared-adapter.js')).createShared(config, mode, model, onDevice);
+    return (await import('./shared-adapter.js')).createShared(config, mode, model, onDevice, format);
   if (mode.startsWith('pc-'))
-    return (await import('./playcanvas-adapter.js')).createPlayCanvas(config, mode, model, onDevice);
-  return (await import('./three-adapter.js')).createThree(config, mode, model, onDevice);
+    return (await import('./playcanvas-adapter.js')).createPlayCanvas(config, mode, model, onDevice, format);
+  return (await import('./three-adapter.js')).createThree(config, mode, model, onDevice, format);
 }
 const adapter = await createAdapter();
 window.api = adapter;

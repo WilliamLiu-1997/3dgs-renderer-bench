@@ -3,7 +3,7 @@ export const PACKAGES = {
   radix: { name: '@sparkjsdev/radix', version: '0.0.1' },
   viewer: { name: '@playcanvas/supersplat-viewer', version: '1.42.0', entry: 'dist/viewer.js' },
   playcanvas: { name: 'playcanvas', version: '2.24.0-beta.30', commit: '876ba2e7dffc246b1008695f23f60ac1a9b96109' },
-  gsl: { name: 'gaussian-splat-lite', version: '1.6.2' },
+  gsl: { name: 'gaussian-splat-lite', version: '1.7.0' },
   threeRadix: { name: 'three', installName: 'three-radix', version: '0.186.1' },
   three: { name: 'three', version: '0.187.0' },
   aholo: { name: '@manycore/aholo-viewer', version: '1.12.0', entry: 'dist/index.js' },
@@ -19,6 +19,11 @@ export const BACKENDS = [
   { id: 'pc-gl', lib: 'playcanvas', name: 'PlayCanvas', backend: 'WebGL2' },
   { id: 'aholo-gl', lib: 'aholo', name: 'Aholo Viewer', backend: 'WebGL2' },
 ];
+// Native bundled SOG support; unsupported inputs are never converted to PLY.
+export const supportsFormat = (backend, format, version = PACKAGES[backend.lib].version) =>
+  format !== 'sog' || backend.lib !== 'radix' || version !== '0.0.1';
+export const modelFormat = filename => filename.split('.').at(-1).toLowerCase();
+
 // GSL's baseline. Spark's radius limits use focal-scaled units; PlayCanvas's
 // minPixelSize uses the same projected units. Alpha matches PlayCanvas's WebGPU
 // visibility floor. Other culling details still differ.

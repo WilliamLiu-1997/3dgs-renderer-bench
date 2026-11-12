@@ -214,13 +214,18 @@ for (const name of ['texStorage2D', 'texStorage3D'])
   });
 for (const name of ['texImage2D', 'texImage3D'])
   patch(p, name, function (f, a) {
-    if (a[1] === 0 && typeof a[3] === 'number')
+    if (a[1] === 0) {
+      // SOG WebP uploads use the six-argument ImageBitmap overload.
+      const source = name === 'texImage2D' && a.length === 6 ? a[5] : null;
+      const width = source ? (source.naturalWidth ?? source.width) : a[3];
+      const height = source ? (source.naturalHeight ?? source.height) : a[4];
       allocation(
         texture(this, a[0]),
-        a[3] * a[4] * (name === 'texImage3D' ? a[5] : 1) * bpp(a[2]),
+        width * height * (name === 'texImage3D' ? a[5] : 1) * bpp(a[2]),
         'texture',
-        `${a[2]} ${a[3]}x${a[4]}`,
+        `${a[2]} ${width}x${height}`,
       );
+    }
     return f.apply(this, a);
   });
 patch(p, 'bufferData', function (f, a) {
@@ -301,6 +306,7 @@ window.memorySnapshot = roots => {
     workerWasmBytes: metrics.workers.filter(w => w.alive).reduce((a, b) => a + b.wasmBytes, 0),
     workers: metrics.workers.map(w => ({ alive: w.alive, wasmBytes: w.wasmBytes })),
     gpuAllocations: measured,
+    gpuTextureAccounting: 2,
     gpuBytes: measured.reduce((a, b) => a + b.bytes, 0),
     gpuPeakBytes: metrics.peakGpuBytes,
     instrumentationGpuBytes: allocations.filter(a => a.label.startsWith('bench:')).reduce((a, b) => a + b.bytes, 0),

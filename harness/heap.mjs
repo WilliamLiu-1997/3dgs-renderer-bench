@@ -11,21 +11,24 @@ export async function collectHeap(browserSession, pageSession) {
     const send = method =>
       new Promise((resolve, reject) => {
         const id = ++nextId;
+        const finish = (error, result) => {
+          clearTimeout(timeout);
+          browserSession.off('Target.receivedMessageFromTarget', receive);
+          if (error) reject(error);
+          else resolve(result);
+        };
+        // A terminated Worker can leave an acknowledged CDP request without a reply.
+        const timeout = setTimeout(() => finish(new Error(`Worker heap sampling timed out: ${method}`)), 30000);
         const receive = event => {
           if (event.sessionId !== sessionId) return;
           const message = JSON.parse(event.message);
           if (message.id !== id) return;
-          browserSession.off('Target.receivedMessageFromTarget', receive);
-          if (message.error) reject(new Error(message.error.message));
-          else resolve(message.result);
+          finish(message.error ? new Error(message.error.message) : null, message.result);
         };
         browserSession.on('Target.receivedMessageFromTarget', receive);
         browserSession
           .send('Target.sendMessageToTarget', { sessionId, message: JSON.stringify({ id, method }) })
-          .catch(error => {
-            browserSession.off('Target.receivedMessageFromTarget', receive);
-            reject(error);
-          });
+          .catch(error => finish(error));
       });
     try {
       await send('Runtime.discardConsoleEntries');

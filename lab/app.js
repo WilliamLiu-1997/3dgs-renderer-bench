@@ -1,4 +1,15 @@
-import { BACKENDS, FRAME_COLUMNS, PACKAGES, PRESETS, exactVersion, aggregate, isBest, roundOrder } from './config.js';
+import {
+  BACKENDS,
+  FRAME_COLUMNS,
+  PACKAGES,
+  PRESETS,
+  exactVersion,
+  aggregate,
+  isBest,
+  roundOrder,
+  supportsFormat,
+  modelFormat,
+} from './config.js';
 const $ = id => document.getElementById(id);
 const repos = {
   spark: 'sparkjsdev/spark',
@@ -61,6 +72,7 @@ for (const key of ['spark', 'radix', 'gsl', 'viewer', 'playcanvas', 'aholo']) {
 for (const backend of BACKENDS)
   $('preview-backend').add(new Option(`${backend.name} / ${backend.backend}`, backend.id));
 $('preview-backend').value = 'gsl-gl';
+$('version-radix').addEventListener('input', updateControls);
 $('version-three').value = PACKAGES.three.version;
 $('version-threeRadix').value = PACKAGES.threeRadix.version;
 
@@ -69,7 +81,11 @@ function getConfig() {
   for (const [key, value] of Object.entries(versions))
     if (!exactVersion(value)) throw Error(`${PACKAGES[key].name} requires an exact version (including beta / rc)`);
   const parameters = structuredClone(PRESETS);
-  const backends = BACKENDS.filter(b => $(`enable-${b.id}`).checked).map(b => b.id);
+  const backends = BACKENDS.filter(
+    b =>
+      $(`enable-${b.id}`).checked &&
+      supportsFormat(b, state.file ? modelFormat(state.file.name) : 'ply', versions[b.lib]),
+  ).map(b => b.id);
   const [width, height] = $('resolution').value.split('x').map(Number);
   return {
     versions,
@@ -103,6 +119,14 @@ function updateControls() {
     .forEach(el => {
       el.disabled = locked;
     });
+  const format = state.file ? modelFormat(state.file.name) : 'ply';
+  for (const backend of BACKENDS) {
+    const supported = supportsFormat(backend, format, $(`version-${backend.lib}`).value.trim());
+    $(`enable-${backend.id}`).disabled = locked || !supported;
+    const option = [...$('preview-backend').options].find(option => option.value === backend.id);
+    option.disabled = !supported;
+  }
+  if ($('preview-backend').selectedOptions[0]?.disabled) $('preview-backend').value = 'gsl-gl';
   $('apply-preview').disabled = locked || !state.file;
   $('fit').disabled = locked || !state.frame || !state.pose;
   $('apply-camera').disabled = locked || !state.file || !state.pose;
@@ -267,7 +291,8 @@ async function selectFile(input) {
   } catch {
     return toast('The model URL has an invalid filename');
   }
-  if (!/\.(ply|spz)$/i.test(name)) return toast('Select a PLY or SPZ model or a direct URL ending in .ply or .spz');
+  if (!/\.(ply|spz|sog)$/i.test(name))
+    return toast('Select a PLY, SPZ or SOG model or a direct URL ending in .ply, .spz or .sog');
   if (!url && !input.size) return toast('The file is empty');
   state.loading = true;
   state.cancelled = false;
@@ -313,6 +338,7 @@ async function selectFile(input) {
     }
     state.source = {
       name: file.name,
+      format: modelFormat(file.name),
       bytes: file.size,
       lastModified: url ? null : file.lastModified,
       conversion: null,
@@ -333,9 +359,11 @@ async function selectFile(input) {
         `SPZ converted to PLY in ${(result.ms / 1000).toFixed(2)} s, preserving SH. All renderers use this PLY; native SPZ loading is not compared.`;
     } else {
       state.file = file;
-      $('format-note').textContent = url
-        ? 'All renderers use the same downloaded PLY. Download time is excluded from renderer load time.'
-        : 'All renderers use the original PLY. Files stay on your device.';
+      $('format-note').textContent = /\.sog$/i.test(file.name)
+        ? 'Native SOG loading preserves codebooks where supported. Radix 0.0.1 is skipped. All compatible renderers receive the same SOG.'
+        : url
+          ? 'All renderers use the same downloaded PLY. Download time is excluded from renderer load time.'
+          : 'All renderers use the original PLY. Files stay on your device.';
     }
   } catch (error) {
     if (url) $('file-meta').textContent = state.cancelled ? 'Loading cancelled' : 'Loading failed';
@@ -578,7 +606,11 @@ async function run() {
   state.statuses = {};
   document.body.classList.add('testing');
   for (const backend of BACKENDS)
-    state.statuses[backend.id] = config.backends.includes(backend.id) ? 'Pending' : 'Not selected';
+    state.statuses[backend.id] = !supportsFormat(backend, modelFormat(state.file.name), config.versions[backend.lib])
+      ? 'Unsupported format'
+      : config.backends.includes(backend.id)
+        ? 'Pending'
+        : 'Not selected';
   const lockedPose = structuredClone(state.pose);
   state.report = {
     schema: 'splat-lab/8',

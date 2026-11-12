@@ -16,20 +16,24 @@ from common import (
     OUTPUTS,
     ROOT,
     TIME_ZONE,
+    check_config,
+    exclusions,
     frame_statistics,
     load_config,
     percentile,
     results_dir,
     run_files,
+    run_pair,
     scenario_name,
+    source_format,
 )
 from PIL import Image
 
 METRICS = {
-    'fps': 'Per-run frames / sampled time (1000 / mean interval between consecutive animation-frame callbacks); rendering-loop throughput, not screen-present FPS',
+    'fps': 'Per-run frames / sampled time (1000 / mean interval between consecutive frame submissions with one GPU frame in flight); rendering-loop throughput, not screen-present FPS',
     'frameP50': 'Per-run 50th percentile of the same frame intervals, milliseconds',
     'frameP95': 'Per-run 95th percentile of the same frame intervals, milliseconds',
-    'cpuMemoryMiB': 'Sum of main + live Worker JS heaps, main + Worker ArrayBuffer/external backing storage, and Worker WASM capacity, MiB; accounting sum, not deduplicated physical memory',
+    'cpuMemoryMiB': 'Sum of main + live Worker JS heaps, main + Worker ArrayBuffer/external backing storage, and Worker WASM capacity, MiB; accounting sum excluding native ImageBitmap/codec storage, not deduplicated physical memory',
     'gpuMiB': 'Explicit live GPU resource capacity excluding timing-query buffers, MiB; not physical VRAM',
     'workerP50': 'Native Worker sort execution, excluding message transfer, milliseconds',
     'rpcP50': 'Sort Worker request-to-response time including message transfer, milliseconds',
@@ -79,6 +83,7 @@ def case_row(run, case, config):
     sort_rpc = [r for r in case['rpc'] if r['name'].startswith('sort')]
     return {
         'model': run['model'],
+        'format': source_format(run),
         'mode': run['mode'],
         'round': run['round'],
         'precision': 'full' if case['fast'] is False else 'default',
@@ -102,6 +107,7 @@ def sort_row(run, sort):
     spans = [sort_span(r) for r in sort['rows']]
     return {
         'model': run['model'],
+        'format': source_format(run),
         'mode': run['mode'],
         'round': run['round'],
         'precision': 'full' if sort['fast'] is False else 'default',
@@ -134,6 +140,7 @@ def capture_images(run, folder, data):
         data['images'].append(
             {
                 'model': run['model'],
+                'format': source_format(run),
                 'mode': run['mode'],
                 'variant': variant,
                 'path': 'images/' + source.name,
@@ -145,6 +152,7 @@ def capture_images(run, folder, data):
         data['quality'].append(
             {
                 'model': run['model'],
+                'format': source_format(run),
                 'mode': run['mode'],
                 'variant': variant,
                 'mae': float(np.mean(abs(delta))),
@@ -159,6 +167,8 @@ def main():
     files = run_files(folder)
     if not files:
         raise SystemExit(f'No runs in {folder}')
+    runs = [json.loads(file.read_text()) for file in files]
+    excluded = exclusions(runs)
     OUTPUTS.mkdir(exist_ok=True)
     shutil.rmtree(OUTPUTS / 'images', ignore_errors=True)
     (OUTPUTS / 'images').mkdir()
@@ -173,6 +183,10 @@ def main():
         'models': config['models'],
         'commits': config.get('commits', {}),
         'versions': config['versions'],
+        'formats': config['formats'],
+        'cohorts': {},
+        'exclusions': list(excluded.values()),
+        'sogInputs': {},
         'rounds': 0,
         'cases': [],
         'sort': [],
@@ -181,13 +195,24 @@ def main():
         'quality': [],
         'runs': [],
     }
-    for file in files:
-        run = json.loads(file.read_text())
-        if run['config'] != config:
-            raise SystemExit('Stale configuration: ' + file.name)
+    for file, run in zip(files, runs, strict=True):
+        check_config(run, config)
+        if run_pair(run) in excluded:
+            continue
         if run.get('failure'):
             print('FAILED', file.name, run['failure'])
             continue
+        format = source_format(run)
+        if format == 'sog' and data['sogInputs'].setdefault(run['model'], run['input']) != run['input']:
+            raise SystemExit('Mixed SOG inputs: ' + run['model'])
+        cohort = data['cohorts'].setdefault(
+            format, {'versions': run['config']['versions'], 'dates': [], 'browsers': []}
+        )
+        if cohort['versions'] != run['config']['versions']:
+            raise SystemExit('Mixed versions within format: ' + format)
+        date = datetime.datetime.fromisoformat(run['started']).astimezone(ZoneInfo(TIME_ZONE)).date().isoformat()
+        cohort['dates'] = sorted(set([*cohort['dates'], date]))
+        cohort['browsers'] = sorted(set([*cohort['browsers'], run['browser']]))
         initial = run['initial']
         data['browser'] = run['browser']
         data['rounds'] = max(run['round'], data['rounds'])
@@ -195,6 +220,7 @@ def main():
             {
                 'name': run['name'],
                 'model': run['model'],
+                'format': source_format(run),
                 'mode': run['mode'],
                 'round': run['round'],
                 'started': run['started'],
@@ -203,6 +229,8 @@ def main():
                 'resolution': initial['resolution'],
                 'dpr': initial['dpr'],
                 'camera': initial['camera'],
+                'versions': run['config']['versions'],
+                'shStorage': initial['state'].get('shStorage'),
                 'renderParameters': initial['state'].get('renderParameters'),
                 'sortRadial': initial['state'].get('sortRadial'),
                 'order': run['order'],
@@ -216,6 +244,7 @@ def main():
         data['memory'].append(
             {
                 'model': run['model'],
+                'format': source_format(run),
                 'mode': run['mode'],
                 'round': run['round'],
                 'precision': 'default',
@@ -249,20 +278,25 @@ def main():
     embedded = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
     (OUTPUTS / '3DGS-Renderer-Bench.html').write_text(template.replace('__BENCHMARK_DATA__', embedded))
     print('Generated', len(data['runs']), 'runs', len(data['cases']), 'cases', len(data['images']), 'images')
-    for model in config['models']:
-        for mode in config['backends']:
-            rows = [
-                r
-                for r in data['cases']
-                if r['model'] == model and r['mode'] == mode and r['scenario'] == 'moving' and r['variant'] == 'sorted'
-            ]
-            print(
-                f'{model:9} {mode:11} moving',
-                'FPS',
-                [round(r['fps'], 1) for r in rows],
-                'P95',
-                [round(r['frameP95'], 1) for r in rows],
-            )
+    for format, spec in config['formats'].items():
+        for model in config['models']:
+            for mode in spec['backends']:
+                rows = [
+                    r
+                    for r in data['cases']
+                    if r['format'] == format
+                    and r['model'] == model
+                    and r['mode'] == mode
+                    and r['scenario'] == 'moving'
+                    and r['variant'] == 'sorted'
+                ]
+                print(
+                    f'{format:3} {model:9} {mode:11} moving',
+                    'FPS',
+                    [round(r['fps'], 1) for r in rows],
+                    'P95',
+                    [round(r['frameP95'], 1) for r in rows],
+                )
 
 
 if __name__ == '__main__':

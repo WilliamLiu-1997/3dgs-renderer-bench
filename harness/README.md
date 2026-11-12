@@ -1,14 +1,14 @@
 # 3DGS Renderer Bench
 
-Instrumented benchmark of original PLY models, with rendering settings adjusted as closely as possible.
+Instrumented benchmark of original PLY models and SOG conversions, with rendering settings adjusted as closely as possible.
 
 - Spark 2.4.0 / WebGL2, extended source and accumulator.
 - Radix 0.0.1 / WebGPU and WebGL2, EWA projection, extended source and native default 24-bit sorting.
-- GSL 1.6.2 / WebGPU and WebGL2.
+- GSL 1.7.0 / WebGPU and WebGL2. The preserved PLY cohort uses 1.6.2.
 - SuperSplat Viewer 1.42.0 / WebGPU, created through its Viewer API and using sorted Engine rendering.
 - PlayCanvas Engine 2.24.0-beta.30 / WebGPU and WebGL2, `dataFormat: 'large'`.
 - Three.js 0.187.0 for GSL/Spark; 0.186.1 for Radix because its released WebGPU implementation is incompatible with r187.
-- Elevator: 2,796,503 splats; HotelFareza: 12,202,010; WillaGlobalPoland: 14,469,103. Full PLY/SH3 inputs without generated LOD.
+- Elevator: 2,796,503 splats; HotelFareza: 12,202,010; WillaGlobalPoland: 14,469,103. Full PLY and SOG / SH3 inputs without generated LOD.
 - 1512 × 982 CSS pixels, DPR 2, 3024 × 1964 physical pixels. No MSAA. Vertical FOV 45°, near 0.1, far 3000, background #101418.
 
 ## Run
@@ -19,12 +19,14 @@ Requires Node.js 22 or 24 and local Google Chrome. Put the PLY files in `../mode
 npm ci
 npm run bench:build   # instrumented renderer Workers → harness/dist/
 npm run bench:pilot   # quick smoke test → harness/pilot/
-npm run bench         # formal runs → harness/results-current/
+npm run models:sog    # convert the full models; hashes skip unchanged inputs
+npm run bench -- --fresh # complete PLY + SOG matrix → harness/results-current/
+npm run bench:sog     # only supplement SOG, preserving published PLY runs
 ```
 
 Formal frame cases use 2 seconds of warm-up, then 5 seconds static or 8 seconds moving (`warmupSeconds` / `sampleSeconds` in `config.json`). Chrome uses its normal frame scheduling without frame-rate/vsync disabling flags.
 
-The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the current protocol are skipped. `RESULTS_DIR` overrides the destination. The published `results/` contains the raw data behind `report/`.
+The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the same configuration and SOG input hash are skipped unless `--fresh` is used. `--format=ply` or `--format=sog` limits input formats. `--supplement` imports missing published results and requires an explicit format. Outlier retries consider only newly measured runs; a resumed supplement never retries preserved results. `--dry-run` prints the schedule without launching Chrome. `RESULTS_DIR` overrides the destination (relative to `harness/`, or an absolute path) for both measurement and reporting. The published `results/` contains the raw data behind `report/`.
 
 Background activity: on macOS the runner keeps the system awake and declares user activity every 30 s, because idle-time maintenance on an idle Mac on AC power (media analysis, Photos indexing, Messages) slowed GPU-bound runs by up to 30% for 15–25 minutes. Other platforms skip this, so disable their idle maintenance and sleep before a run. Every 20 s the five busiest non-Chrome processes go to `activity.log` (skipped where `ps` is unavailable). After three full rounds, any run with a case more than 3% (`RETRY_PERCENT`) off the median FPS of its rounds is rerun once; the original moves to `outliers/` and the rerun records the deviation in `retry`. Retried runs are excluded from the execution-order check. `activity.log` and `outliers/` are published with the raw results.
 
@@ -33,7 +35,7 @@ node harness/run.mjs willa radix-gpu viewer-gpu pc-gpu
 ROUNDS=1 node harness/run.mjs elevator gsl-gpu
 ```
 
-Backend IDs (shared with the lab): `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`. `npm run bench:serve` separately serves the canvas at port 5349; open `/?mode=pc-gpu&model=hotel`.
+Backend IDs (shared with the lab): `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu`, `gsl-gl`, `viewer-gpu`, `pc-gpu`, `pc-gl`, `aholo-gl`. `npm run bench:serve` separately serves the canvas at port 5349; open `/?mode=pc-gpu&model=hotel`.
 
 ## Files
 
@@ -66,7 +68,7 @@ The harness adapters import `lab/config.js` directly, so presets and pinned pack
 
 Spark's radius limits are focal-scaled; PlayCanvas's minimum projected size is matched on that basis. PlayCanvas extra contribution culling is disabled (`minContribution: 0`), with `colorUpdateAngle: 0`. Native support, projection, culling and sorting precision still differ: these presets do not guarantee identical images. The full source models contain no LOD hierarchy.
 
-Every backend measures static and moving versions of both the main and second views. Each model's `secondView` in `config.json` either orbits and scales the main offset (a closer side view) or sets its own target and offset (the entrance side of WillaGlobalPoland). PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL 1.6.2 keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
+Every backend measures static and moving versions of both the main and second views. Each model's `secondView` in `config.json` either orbits and scales the main offset (a closer side view) or sets its own target and offset (the entrance side of WillaGlobalPoland). PlayCanvas WebGPU and both GSL backends additionally measure raw stochastic rendering in the same four views. PlayCanvas uses native blue noise (`stochastic: true`, `dither: 'bluenoise'`) without sorting or post-processing. Spatial resolve is not measured. GSL keeps its default 16-bit front-to-back stochastic sorting (`stochasticSort: true`). Other native projection, alpha and radius-limit differences remain. These cases are separate from sorted rendering; temporal accumulation is off. PlayCanvas WebGL2 does not support this stochastic switch.
 
 Radix and Viewer use the [Lab presets and compatibility rules](../lab/README.md). The harness drives Viewer updates and draws at the fixed physical resolution. Its loading timer includes Viewer initialization, model loading and initial rendering, ending at the `firstFrame` event. Radix CPU reports native JavaScript Worker sorting, message round trip, and complete asynchronous sorting including GPU key projection/readback. Its isolated diagnostic awaits one completed sort per sample; frame tests retain native asynchronous sorting.
 
@@ -109,6 +111,16 @@ npm run report          # validate → analyze → plot into outputs/
 npm run report:publish  # same, then publish to report/ and harness/results/
 ```
 
-Only matching-protocol data is accepted; full validation expects 81 successful runs across three models, nine backends and three rounds (432 frame-performance groups and 81 sorting groups). Publishing copies the raw runs and round-one captures to `harness/results/`, the report artifacts to `report/`, and regenerates `report/input-manifest.json` (hardware, model hashes, protocol, dates).
+Only matching-protocol data is accepted. Native SOG failures before initialization are recorded as unavailable; later rounds skip that pair, and any pair with a loading failure is excluded from all rankings. Rendering or sampling failures still fail validation; full validation expects 144 scheduled records across three models and three rounds: nine PLY backends plus seven SOG candidates. The current report has 141 successful runs (780 frame-performance groups and 141 sorting groups); WillaGlobalPoland / Spark SOG is excluded after native loading failed. Publishing copies the raw runs and round-one captures to `harness/results/`, the report artifacts to `report/`, and regenerates `report/input-manifest.json` (hardware, model hashes, protocol, dates).
 
 To refresh only Radix sorting after completed frame runs, run `npm run bench:sort`. It measures both Radix backends across three models and three interleaved rounds, with four warm-up iterations and 16 samples per run. Only the raw `sort` section is replaced; each supplement records its own timestamp, browser and execution order. Frame, memory and capture data remain from the original runs. Regenerate and publish the report afterward.
+
+## SOG source storage
+
+The SOG v2 files use 65,536 SH3 codebook entries with full original splat counts. GSL 1.7.0, PlayCanvas and Viewer retain shared SH source codebooks; Spark and Aholo decode SH into per-splat storage. Aholo uses its existing Compressed pack to preserve SH3. Radix 0.0.1 rejects SOG and is skipped. Spark 2.4.0 reports WASM `unreachable` while loading WillaGlobalPoland SOG; that pair is excluded, with the failure preserved. No SOG input is converted back to PLY for rendering. Raw runs record `format`, `input` hashes and `initial.state.shStorage`. Memory remains the full measured CPU accounting sum and explicit GPU allocation, including renderer work buffers.
+
+PLY v5 runs without a `format` field are validated against `baseline-ply-v5.json`; their bytes, timestamps, versions and metrics are retained. New runs are validated against current `config.json`. The report separates format cohorts, including their versions, browsers and dates. Cross-format differences also include quantization and version changes.
+
+WebGL texture accounting v2 handles both explicit dimensions and ImageBitmap uploads used by SOG. A targeted repair can retain the original schedule and archive the previous raw run: `ROUNDS=1 node harness/run.mjs elevator pc-gl --format=sog --retry=texture-accounting`. This is separate from a fresh full matrix. `--retry-outliers` explicitly checks existing selected results for the usual one-time 3% retry; normal resume only checks newly measured runs.
+
+CPU accounting excludes native ImageBitmap and image-decoder storage, which matters for SOG WebP textures. It is not a total-RAM or loading-peak comparison; the raw process RSS diagnostics remain separate.
