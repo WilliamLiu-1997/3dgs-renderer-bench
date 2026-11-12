@@ -53,9 +53,31 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
     sog ? SplatLoader.SplatFileType.SOG : SplatLoader.SplatFileType.PLY,
     new URL(url, location.href).href,
     SplatLoader.SplatPackType.Compressed,
-    { maxShDegree: 3 },
+    { maxShDegree: 3, retainData: false },
   );
-  const splat = await SplatUtils.createSplat(data);
+  const min = [Infinity, Infinity, Infinity],
+    max = [-Infinity, -Infinity, -Infinity];
+  // Compressed's first sampler stores xyz in the first three of four 32-bit words per splat.
+  // Scan chunks before upload releases them, excluding texture padding after the last splat.
+  const expandBounds = (source, offset = 0) => {
+    const centers = new Float32Array(source.buffer, source.byteOffset, source.byteLength / 4);
+    const count = Math.min(centers.length / 4, data.counts - offset / 16);
+    for (let i = 0; i < count; i++)
+      for (let k = 0; k < 3; k++) {
+        min[k] = Math.min(min[k], centers[i * 4 + k]);
+        max[k] = Math.max(max[k], centers[i * 4 + k]);
+      }
+  };
+  if (data.stream) {
+    const readChunks = data.readChunks.bind(data);
+    data.readChunks = (consume, release) =>
+      readChunks(async chunk => {
+        for (const { index, offset, source } of chunk.samplers) if (index === 0) expandBounds(source, offset);
+        await consume(chunk);
+      }, release);
+  } else expandBounds(data.serialize().samplers[0].source);
+  const splat = await SplatUtils.createSplat(data, viewer._getEngine().renderer);
+  splat.autoFreeResourceOnGpuPacked = true;
   viewer.getScene().add(splat);
   const camera = new lib.PerspectiveCamera(
     commonCamera.fov,
@@ -82,15 +104,6 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
   } while (!sorted || !splat.isRenderingStability);
   const loadMs = performance.now() - start;
 
-  const centers = new Float32Array(data.counts * 3);
-  data.fillCenters(centers);
-  const min = [Infinity, Infinity, Infinity],
-    max = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < centers.length; i += 3)
-    for (let k = 0; k < 3; k++) {
-      min[k] = Math.min(min[k], centers[i + k]);
-      max[k] = Math.max(max[k], centers[i + k]);
-    }
   const center = min.map((v, k) => (v + max[k]) / 2);
   const radius = Math.hypot(...max.map((v, k) => v - min[k])) / 2;
 
