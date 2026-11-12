@@ -47,7 +47,7 @@ const playcanvas = {
 export const PRESETS = {
   radix: {
     method: 'ewa',
-    sortBits: 16,
+    sortBits: 24,
     params: { minAlpha: baseline.minAlpha, maxStdDev: Math.sqrt(8), falloff: 1 },
     objectParams: {
       minPixelRadius: 2,
@@ -72,7 +72,12 @@ export const PRESETS = {
   // 16-bit half-float sort keys and fp32 pack. It sorts by view depth only,
   // keeps its fixed 1/255 alpha floor and clips without a margin.
   aholo: {
-    pack: { highPrecisionEnabled: true, precalculateEnabled: true, cameraRelativeEnabled: false },
+    pack: {
+      highPrecisionEnabled: true,
+      precalculateEnabled: true,
+      cameraRelativeEnabled: false,
+      repackEnabled: true,
+    },
     raster: {
       preBlurAmount: baseline.preBlurAmount,
       blurAmount: baseline.blurAmount,
@@ -85,7 +90,7 @@ export const PRESETS = {
     // Re-sort and re-evaluate SH after a 0.1 mm or ~0.16° camera change (the defaults are 1 m and ~16°). The
     // orbit moves far more per frame; tighter thresholds trip on float32 rounding of an unchanged pose.
     sort: {
-      highPrecisionEnabled: false,
+      radial: true,
       minIntervalMs: 0,
       sortCameraDistance: 1e-4,
       sortCameraCoorient: 1 - 1e-6,
@@ -105,7 +110,7 @@ export const FRAME_COLUMNS = [
 export const isBest = (value, values, higher = false) =>
   Number.isFinite(value) &&
   Number(value.toFixed(2)) ===
-    (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
+  (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
 export const exactVersion = value => /^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(value);
 export const median = values => percentile(values, 0.5);
 // Linear interpolation between closest ranks; matches numpy.percentile's default.

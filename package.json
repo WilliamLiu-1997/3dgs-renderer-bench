@@ -21,7 +21,7 @@
     "bench:sog": "node harness/run.mjs --format=sog --supplement"
   },
   "dependencies": {
-    "@manycore/aholo-viewer": "1.12.0",
+    "@manycore/aholo-viewer": "1.14.0",
     "@playcanvas/splat-transform": "3.6.4",
     "@playcanvas/supersplat-viewer": "1.42.0",
     "@sparkjsdev/radix": "file:vendor/sparkjsdev-radix-0.0.1.tgz",
