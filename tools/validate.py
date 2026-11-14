@@ -12,7 +12,6 @@ from zoneinfo import ZoneInfo
 
 from common import (
     FRAME_METRIC,
-    HARNESS,
     OUTPUTS,
     TIME_ZONE,
     check_config,
@@ -110,7 +109,7 @@ def check_case(name, mode, case, parameters):
 
     # Rendering state.
     assert state['stochastic'] == (case['variant'] == 'stochastic'), name
-    assert state['sortRadial'] is (not mode.startswith('aholo-')), name
+    assert state['sortRadial'] is True, name
     assert matches(state['renderParameters'], parameters), name
     if mode.startswith('gsl'):
         assert state['spatialResolve'] is False, name
@@ -161,7 +160,7 @@ def check_run(name, run):
     assert initial['resolution'] == [config['width'], config['height']] and initial['dpr'] == config['dpr'], name
     assert state['sourceCount'] == config['models'][run['model']]['count'] and state['sh'] == 3, name
     assert len(run['order']) == len(set(run['order'])) and mode in run['order'], name
-    assert state['sortRadial'] is (not mode.startswith('aholo-')), name
+    assert state['sortRadial'] is True, name
     format = source_format(run)
     parameters = expected_parameters(mode)
     if format == 'sog':
@@ -191,7 +190,6 @@ def check_run(name, run):
         assert state['lodEnabled'] is True and state['hasLodData'] is False, name
     if mode == 'viewer-gpu':
         assert state['engineVersion'] == run['config']['versions']['playcanvas'], name
-        assert state['engineCommit'] == run['config']['commits']['playcanvas'], name
     if mode == 'gsl-gpu' or mode.startswith('radix-'):
         assert state['workingColorSpace'] == 'srgb' and state['outputColorSpace'] == 'srgb', name
     if mode == 'gsl-gpu':
@@ -281,7 +279,7 @@ summary = {
     'complete': actual == expected,
     'formats': formats,
     'sogInputs': sog_inputs,
-    'preservedPlyVersions': json.loads((HARNESS / 'baseline-ply-v5.json').read_text())['versions'],
+    'versions': config['versions'],
     'records': len(actual),
     'runs': successful,
     'exclusions': list(excluded.values()),
@@ -302,7 +300,7 @@ summary = {
     'radixSortSupplementRuns': len(sort_execution),
     'radixDefaultSortBits': 24,
     'renderingSettingsAdjustedAsCloselyAsPossible': True,
-    'allSortedCasesRadialExceptAholo': True,
+    'allSortedCasesRadial': True,
     'fourViewsPerVariant': True,
     'stochasticBackends': config['stochasticBackends'],
     'gslStochasticFrontToBackSort': True,

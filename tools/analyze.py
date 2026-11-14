@@ -181,7 +181,6 @@ def main():
         'metrics': METRICS,
         'backends': [{'id': mode, **BACKEND_STYLE[mode]} for mode in config['backends']],
         'models': config['models'],
-        'commits': config.get('commits', {}),
         'versions': config['versions'],
         'formats': config['formats'],
         'cohorts': {},

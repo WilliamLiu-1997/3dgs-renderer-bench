@@ -33,9 +33,9 @@ export async function createShared(config, mode, model, onDevice, format = 'ply'
   const view = radix && !gpu ? adapter.gs.viewFor(camera) : null;
   const jobs = [];
   let autoSort;
-  // Aholo Viewer sorts asynchronously: GPU keys, fenced readback, Worker sort, then the order is applied on a
-  // later frame. It never flushes GL itself, so flush while waiting instead of drawing extra frames. A splat is
-  // stable after a frame drawn with no sort in flight.
+  // Aholo Viewer sorts asynchronously: a WASM Worker computes keys from centers read back once, then the order is
+  // uploaded on a later frame. It never flushes GL itself, so flush while waiting instead of drawing extra frames.
+  // A splat is stable after a frame drawn with no sort in flight.
   async function aholoUpdate() {
     const { splat, gl } = adapter;
     const start = performance.now();
@@ -133,7 +133,7 @@ export async function createShared(config, mode, model, onDevice, format = 'ply'
         stochastic: false,
         spatialResolve: false,
         temporalResolve: false,
-        sortRadial: aholo ? false : radix || settings.radialSorting,
+        sortRadial: aholo ? settings.sort.radial : radix || settings.radialSorting,
         renderParameters: settings,
       };
     },

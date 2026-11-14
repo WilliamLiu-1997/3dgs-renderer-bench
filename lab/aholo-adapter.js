@@ -121,7 +121,7 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
       version: loaded.version,
       moduleURL: loaded.moduleURL,
       backend: 'WebGL2',
-      sortMetric: 'view-depth',
+      sortMetric: cells.Splatting.sort.radial.get() ? 'radial-distance' : 'view-depth',
       shStorage: { kind: 'per-splat', sourceType: splat.PackType },
       settings: {
         packType: 'Compressed',

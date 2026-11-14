@@ -1,5 +1,5 @@
 {
-  "protocol": "nine-backends-four-views-one-frame-in-flight-v5",
+  "protocol": "nine-backends-four-views-one-frame-in-flight-v6",
   "logicalWidth": 1512,
   "logicalHeight": 982,
   "dpr": 2,
@@ -50,17 +50,14 @@
     }
   },
   "versions": {
-    "gsl": "1.7.0",
+    "gsl": "1.8.1",
     "spark": "2.4.0",
     "radix": "0.0.1",
-    "viewer": "1.42.0",
+    "viewer": "1.43.2",
     "three": "0.187.0",
-    "playcanvas": "2.24.0-beta.30",
+    "playcanvas": "2.24.1",
     "threeRadix": "0.186.1",
-    "aholo": "1.12.0"
-  },
-  "commits": {
-    "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+    "aholo": "1.14.0"
   },
   "formats": {
     "ply": {

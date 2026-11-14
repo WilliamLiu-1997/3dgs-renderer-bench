@@ -28,7 +28,7 @@ def record(model, info, elapsed=None):
     with zipfile.ZipFile(output) as archive:
         meta = json.loads(archive.read('meta.json'))
         assert archive.testzip() is None, output
-    assert meta['count'] == info['count'] and meta['shN']['bands'] == 3, output
+    assert meta['version'] == 2 and meta['count'] == info['count'] and meta['shN']['bands'] == 3, output
     return {
         'model': model,
         'sourceSha256': sha256(source),
@@ -64,8 +64,10 @@ def main():
                 print('SKIP verified', output.name, flush=True)
                 continue
         start = time.monotonic()
+        # SOG v2 (3.8+ defaults to v3, which not every renderer reads); -w replaces an earlier conversion.
         subprocess.run(
-            ['node', str(CONVERTER / 'bin/cli.mjs'), '-g', '0', '-i', '10', str(source), str(output)],
+            ['node', str(CONVERTER / 'bin/cli.mjs'), '-w', '-g', '0', '-i', '10', '--sog-version', '2']
+            + [str(source), str(output)],
             cwd=ROOT,
             check=True,
         )

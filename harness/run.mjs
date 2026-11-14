@@ -170,9 +170,7 @@ async function measureRun(output, round) {
     const { state } = output.initial;
     if (mode.startsWith('radix-') && state.renderParameters.sortBits !== 24)
       throw Error('Radix default 24-bit sorting required');
-    // Aholo Viewer only sorts by view depth.
-    if (state.sortRadial !== !mode.startsWith('aholo-'))
-      throw Error('Radial sorting required for every sorted backend');
+    if (state.sortRadial !== true) throw Error('Radial sorting required for every sorted backend');
     console.log('READY', output.name, output.initial.loadMs.toFixed(0), 'ms', state);
 
     const fast = true;

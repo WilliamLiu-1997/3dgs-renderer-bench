@@ -1,13 +1,16 @@
 export const PACKAGES = {
   spark: { name: '@sparkjsdev/spark', version: '2.4.0' },
   radix: { name: '@sparkjsdev/radix', version: '0.0.1' },
-  viewer: { name: '@playcanvas/supersplat-viewer', version: '1.42.0', entry: 'dist/viewer.js' },
-  playcanvas: { name: 'playcanvas', version: '2.24.0-beta.30', commit: '876ba2e7dffc246b1008695f23f60ac1a9b96109' },
-  gsl: { name: 'gaussian-splat-lite', version: '1.7.0' },
+  viewer: { name: '@playcanvas/supersplat-viewer', version: '1.43.2', entry: 'dist/viewer.js' },
+  // The bundled ESM build; the package's `module` entry is an unbundled source tree.
+  playcanvas: { name: 'playcanvas', version: '2.24.1', entry: 'build/playcanvas.mjs' },
+  gsl: { name: 'gaussian-splat-lite', version: '1.8.1' },
   threeRadix: { name: 'three', installName: 'three-radix', version: '0.186.1' },
   three: { name: 'three', version: '0.187.0' },
-  aholo: { name: '@manycore/aholo-viewer', version: '1.12.0', entry: 'dist/index.js' },
+  aholo: { name: '@manycore/aholo-viewer', version: '1.14.0', entry: 'dist/index.js' },
 };
+// Converts SPZ to a shared PLY in the lab and PLY to SOG for the harness.
+export const CONVERTER = { name: '@playcanvas/splat-transform', version: '3.11.2' };
 export const BACKENDS = [
   { id: 'spark-gl', lib: 'spark', name: 'Spark', backend: 'WebGL2' },
   { id: 'radix-gpu', lib: 'radix', name: 'Radix', backend: 'WebGPU' },
@@ -69,8 +72,8 @@ export const PRESETS = {
   gsl: { ...baseline, fastSort: true, stochastic: false },
   // Aholo Viewer's raster shares Spark's focal-scaled units. It culls by projected area instead of radius;
   // the threshold equals Spark's minPixelRadius 2 for an opaque isotropic splat (pi * (1 - e^-4) * (2 / sqrt 8)^2).
-  // 16-bit half-float sort keys and fp32 pack. It sorts by view depth only,
-  // keeps its fixed 1/255 alpha floor and clips without a margin.
+  // fp32 pack, repacked in sorted order on WebGL. Radial sorting by camera distance on its fixed 24-bit float keys;
+  // it keeps its fixed 1/255 alpha floor and clips without a margin.
   aholo: {
     pack: {
       highPrecisionEnabled: true,
@@ -110,7 +113,7 @@ export const FRAME_COLUMNS = [
 export const isBest = (value, values, higher = false) =>
   Number.isFinite(value) &&
   Number(value.toFixed(2)) ===
-  (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
+    (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
 export const exactVersion = value => /^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(value);
 export const median = values => percentile(values, 0.5);
 // Linear interpolation between closest ranks; matches numpy.percentile's default.

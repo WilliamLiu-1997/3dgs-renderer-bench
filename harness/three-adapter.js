@@ -150,7 +150,7 @@ export async function createThree(config, mode, model, onDevice, format = 'ply')
           : {
               kind: mesh.splats.palette ? 'shared-codebook' : 'per-splat',
               paletteBytes: mesh.splats.palette?.byteLength ?? 0,
-              labelBytes: mesh.splats.extra.shLabels?.byteLength ?? 0,
+              labelBytes: (mesh.splats.splatExtra ?? mesh.splats.extra)?.shLabels?.byteLength ?? 0,
               paletteStride: mesh.splats.palette?.stride ?? 0,
             },
         accumulatorExtended: spark ? gs.accumExtSplats : true,

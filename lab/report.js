@@ -134,7 +134,7 @@ export async function createReport(report) {
     y += 5;
   }
   paragraph(
-    'Green marks the highest FPS or lowest frame time per scenario; ties share the highlight. FPS, P50 and P95 are medians of the per-round values. Fixed presets may produce different image quality. All backends use radial distance sorting (Aholo Viewer: view depth only) without post-processing.',
+    'Green marks the highest FPS or lowest frame time per scenario; ties share the highlight. FPS, P50 and P95 are medians of the per-round values. Fixed presets may produce different image quality. All backends use radial distance sorting without post-processing.',
     13,
   );
 

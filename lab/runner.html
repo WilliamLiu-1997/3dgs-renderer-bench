@@ -35,12 +35,11 @@
         pcVersion === PACKAGES.playcanvas.version
           ? './vendor/playcanvas/'
           : `https://cdn.jsdelivr.net/npm/playcanvas@${pcVersion}/`;
-      const pcMetadata = await (await fetch(pcBase + 'package.json')).json();
       const map = document.createElement('script');
       map.type = 'importmap';
       map.textContent = JSON.stringify({
         imports: {
-          playcanvas: pcBase + pcMetadata.module,
+          playcanvas: pcBase + PACKAGES.playcanvas.entry,
           'playcanvas/scripts/': pcBase + 'scripts/',
           three: base + 'build/three.module.js',
           'three/webgpu': base + 'build/three.webgpu.js',
