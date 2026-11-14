@@ -26,13 +26,12 @@ export async function buildLab(out = path.join(root, 'site/test')) {
       to = path.join(out, 'vendor', key);
     await fs.mkdir(to, { recursive: true });
     const metadata = JSON.parse(await fs.readFile(path.join(from, 'package.json'), 'utf8'));
-    if (metadata.version !== pkg.version || (pkg.commit && metadata.gitHead !== pkg.commit))
-      throw Error(`Dependency mismatch: ${pkg.name}`);
+    if (metadata.version !== pkg.version) throw Error(`Dependency mismatch: ${pkg.name}`);
     await fs.copyFile(path.join(from, 'package.json'), path.join(to, 'package.json'));
     const dirs = key.startsWith('three')
       ? ['build', 'examples/jsm']
       : key === 'playcanvas'
-        ? ['build/playcanvas.mjs', 'scripts']
+        ? [pkg.entry, 'scripts']
         : ['dist'];
     for (const dir of dirs)
       await fs.cp(path.join(from, dir), path.join(to, dir), {

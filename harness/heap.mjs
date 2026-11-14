@@ -1,5 +1,16 @@
-// Sample each live V8 isolate outside timed frames. Every run owns a fresh browser.
+// Sample each live V8 isolate outside timed frames. Every run owns a fresh browser. A Worker that exits while it is
+// being sampled (renderers retire loader Workers after loading) restarts the snapshot, so every isolate in it is live.
 export async function collectHeap(browserSession, pageSession) {
+  for (let attempt = 1; ; attempt++)
+    try {
+      return await sampleHeap(browserSession, pageSession);
+    } catch (error) {
+      if (attempt === 3 || !/No session|No target|not found|timed out/i.test(error.message)) throw error;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+}
+
+async function sampleHeap(browserSession, pageSession) {
   const { targetInfos } = await browserSession.send('Target.getTargets');
   const workers = [];
   for (const target of targetInfos.filter(target => target.type === 'worker')) {
@@ -39,6 +50,7 @@ export async function collectHeap(browserSession, pageSession) {
         ...(await send('Runtime.getHeapUsage')),
       });
     } finally {
+      // Fails with "No session" if the Worker exited meanwhile; collectHeap then samples again.
       await browserSession.send('Target.detachFromTarget', { sessionId });
     }
   }

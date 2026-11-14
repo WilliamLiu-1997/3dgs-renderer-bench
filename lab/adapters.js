@@ -19,12 +19,9 @@ export async function loadLibrary(key, version) {
   const entry = pkg.entry ?? metadata.module;
   if (!entry || typeof entry !== 'string') throw Error('This version has no loadable ESM entry');
   const lib = await import(/* @vite-ignore */ new URL(entry, base).href);
-  if (version === pkg.version && pkg.commit && lib.revision !== pkg.commit)
-    throw Error('Bundled PlayCanvas commit mismatch');
   return {
     lib,
     version: metadata.version,
-    commit: version === pkg.version ? pkg.commit : undefined,
     moduleURL: new URL(entry, base).href,
     peerDependencies: metadata.peerDependencies ?? {},
   };
@@ -211,7 +208,7 @@ async function createPlayCanvas(pc, gpu, canvas, commonCamera, url, filename, si
     bounds: { center: [center.x, center.y, center.z], radius: halfExtents.length() },
     info: {
       version: loaded.version,
-      commit: loaded.commit,
+      revision: pc.revision,
       moduleURL: loaded.moduleURL,
       backend: gpu ? 'WebGPU' : 'WebGL2',
       settings: { ...Object.fromEntries(Object.keys(common).map(k => [k, params[k]])) },

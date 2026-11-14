@@ -4,9 +4,10 @@ Instrumented benchmark of original PLY models and SOG conversions, with renderin
 
 - Spark 2.4.0 / WebGL2, extended source and accumulator.
 - Radix 0.0.1 / WebGPU and WebGL2, EWA projection, extended source and native default 24-bit sorting.
-- GSL 1.7.0 / WebGPU and WebGL2. The preserved PLY cohort uses 1.6.2.
-- SuperSplat Viewer 1.42.0 / WebGPU, created through its Viewer API and using sorted Engine rendering.
-- PlayCanvas Engine 2.24.0-beta.30 / WebGPU and WebGL2, `dataFormat: 'large'`.
+- GSL 1.8.1 / WebGPU and WebGL2.
+- SuperSplat Viewer 1.43.2 / WebGPU, created through its Viewer API and using sorted Engine rendering.
+- PlayCanvas Engine 2.24.1 / WebGPU and WebGL2, `dataFormat: 'large'`.
+- Aholo Viewer 1.14.0 / WebGL2, Compressed source pack, radial sorting.
 - Three.js 0.187.0 for GSL/Spark; 0.186.1 for Radix because its released WebGPU implementation is incompatible with r187.
 - Elevator: 2,796,503 splats; HotelFareza: 12,202,010; WillaGlobalPoland: 14,469,103. Full PLY and SOG / SH3 inputs without generated LOD.
 - 1512 × 982 CSS pixels, DPR 2, 3024 × 1964 physical pixels. No MSAA. Vertical FOV 45°, near 0.1, far 3000, background #101418.
@@ -21,12 +22,12 @@ npm run bench:build   # instrumented renderer Workers → harness/dist/
 npm run bench:pilot   # quick smoke test → harness/pilot/
 npm run models:sog    # convert the full models; hashes skip unchanged inputs
 npm run bench -- --fresh # complete PLY + SOG matrix → harness/results-current/
-npm run bench:sog     # only supplement SOG, preserving published PLY runs
+npm run bench:sog     # only re-measure SOG, importing the published PLY runs
 ```
 
 Formal frame cases use 2 seconds of warm-up, then 5 seconds static or 8 seconds moving (`warmupSeconds` / `sampleSeconds` in `config.json`). Chrome uses its normal frame scheduling without frame-rate/vsync disabling flags.
 
-The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the same configuration and SOG input hash are skipped unless `--fresh` is used. `--format=ply` or `--format=sog` limits input formats. `--supplement` imports missing published results and requires an explicit format. Outlier retries consider only newly measured runs; a resumed supplement never retries preserved results. `--dry-run` prints the schedule without launching Chrome. `RESULTS_DIR` overrides the destination (relative to `harness/`, or an absolute path) for both measurement and reporting. The published `results/` contains the raw data behind `report/`.
+The runner uses port 5351 (`PORT` overrides it), starts/stops its own server, and launches a fresh Chrome process per model/backend/round. Paired rounds run forward/reverse order; the next pair rotates the starting backend. Each result records its execution order. GSL always uses default sorting (`fastSort: true`); Radix uses its default `sortBits: 24`. Completed results with the same configuration and SOG input hash are skipped unless `--fresh` is used. `--format=ply` or `--format=sog` limits input formats. `--supplement` imports missing published results and requires an explicit format. Outlier retries consider only newly measured runs; a resumed supplement never retries imported results. `--dry-run` prints the schedule without launching Chrome. `RESULTS_DIR` overrides the destination (relative to `harness/`, or an absolute path) for both measurement and reporting. The published `results/` contains the raw data behind `report/`.
 
 Background activity: on macOS the runner keeps the system awake and declares user activity every 30 s, because idle-time maintenance on an idle Mac on AC power (media analysis, Photos indexing, Messages) slowed GPU-bound runs by up to 30% for 15–25 minutes. Other platforms skip this, so disable their idle maintenance and sleep before a run. Every 20 s the five busiest non-Chrome processes go to `activity.log` (skipped where `ps` is unavailable). After three full rounds, any run with a case more than 3% (`RETRY_PERCENT`) off the median FPS of its rounds is rerun once; the original moves to `outliers/` and the rerun records the deviation in `retry`. Retried runs are excluded from the execution-order check. `activity.log` and `outliers/` are published with the raw results.
 
@@ -49,6 +50,7 @@ Backend IDs (shared with the lab): `spark-gl`, `radix-gpu`, `radix-gl`, `gsl-gpu
 | `instrument.js` | Error capture, Worker RPC timing and explicit GPU allocation accounting |
 | `three-adapter.js`, `playcanvas-adapter.js`, `shared-adapter.js` | Renderer adapters (the shared one reuses the lab's Radix/Viewer adapters) |
 | `timer.js`, `heap.mjs`, `radix-worker.js` | WebGPU timestamps, CDP heap snapshots, instrumented Radix Worker |
+| `dist/aholo-sort-worker.js` | Aholo Viewer's sort Worker with a WASM memory probe, served at the package's own Worker URL |
 | `build.mjs` | Builds `dist/` and checks installed versions against `config.json` and `lab/config.js` |
 
 ## Matched rendering presets
@@ -94,9 +96,9 @@ Radix retains its native default 24-bit keys, discarding the lowest seven float3
 
 Spark retains float32 keys and uses two 16-bit Worker/WASM radix digits. PlayCanvas and Viewer map float32 squared-distance bits to approximately log-spaced radial keys. WebGL2 uses 16-bit counting keys; WebGPU selects 16–20 bits from the active count and rounds to the radix width. The mapped range starts at `nearClip / 1024` and ends at the active scene bound. This Apple GPU uses portable 4-bit radix.
 
-GSL 1.6.2 uses camera distance for radial sorting on both backends. Default sorting drops the lowest eight float32-key bits: one counting pass over 23 effective bits on WebGL2 (32 MiB count table), three 8-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL 1.6.2’s default 16-bit front-to-back ordering (two 8-bit GPU radix passes on WebGPU).
+GSL 1.8.1 uses camera distance for radial sorting on both backends. Default sorting drops the lowest eight float32-key bits: one counting pass over 23 effective bits on WebGL2 (32 MiB count table), three 8-bit radix digits on WebGPU. Ordinary depth-sorted cases use this default path. Raw stochastic cases retain GSL’s default 16-bit front-to-back ordering (two 8-bit GPU radix passes on WebGPU).
 
-Aholo Viewer 1.12.0 sorts by view depth only (no radial option). It uses its high-precision options: 32-bit float keys (default: 16-bit half floats in one 65,536-bucket counting pass) sorted as two 16-bit radix digits in a Worker after a fenced GPU readback, and an fp32 GPU pack. Its Compressed source keeps float32 positions, half-float scale, color and opacity, 32-bit octahedral rotation and 11/10/11-bit SH clamped to ±1. It re-sorts after a 0.1 mm or ~0.16° camera change (defaults: 1 m and ~16°); tighter thresholds trip on float32 rounding of an unchanged pose. It never flushes GL itself, so the sort diagnostic flushes while waiting instead of drawing extra frames.
+Aholo Viewer 1.14.0 sorts by camera distance (`sort.radial: true`). Its keys are always the upper 24 bits of the float32 metric (1.14 removed `sort.highPrecisionEnabled`): one counting pass over 23 effective bits (32 MiB count table) in a WASM SIMD Worker, which reads splat centers back from the GPU once and reuses them while only the camera moves. Splats behind the camera plane are dropped. It uses an fp32 GPU pack and repacks the WebGL rendering textures in sorted order (`pack.repackEnabled: true`, extra GPU memory and a repack pass). The harness serves a copy of its sort Worker that reports WASM memory capacity with each result; the sorting code is unchanged. Its Compressed source keeps float32 positions, half-float scale, color and opacity, 32-bit octahedral rotation and 11/10/11-bit SH clamped to ±1. It re-sorts after a 0.1 mm or ~0.16° camera change (defaults: 1 m and ~16°); tighter thresholds trip on float32 rounding of an unchanged pose. It never flushes GL itself, so the sort diagnostic flushes while waiting instead of drawing extra frames.
 
 GSL native WebGPU uses an sRGB working space; WebGL uses Linear-sRGB internally and blends/outputs in sRGB, matching the lab. Radix uses an sRGB working space on both backends, so it also blends in sRGB. PlayCanvas uses linear tone mapping and native sRGB output. Native SH decoding and source encodings remain unchanged.
 
@@ -117,9 +119,9 @@ To refresh only Radix sorting after completed frame runs, run `npm run bench:sor
 
 ## SOG source storage
 
-The SOG v2 files use 65,536 SH3 codebook entries with full original splat counts. GSL 1.7.0, PlayCanvas and Viewer retain shared SH source codebooks; Spark and Aholo decode SH into per-splat storage. Aholo uses its existing Compressed pack to preserve SH3. Radix 0.0.1 rejects SOG and is skipped. Spark 2.4.0 reports WASM `unreachable` while loading WillaGlobalPoland SOG; that pair is excluded, with the failure preserved. No SOG input is converted back to PLY for rendering. Raw runs record `format`, `input` hashes and `initial.state.shStorage`. Memory remains the full measured CPU accounting sum and explicit GPU allocation, including renderer work buffers.
+The SOG v2 files use 65,536 SH3 codebook entries with full original splat counts. GSL, PlayCanvas and Viewer retain shared SH source codebooks; Spark and Aholo decode SH into per-splat storage. Aholo uses its existing Compressed pack to preserve SH3. Radix 0.0.1 rejects SOG and is skipped. Spark 2.4.0 reports WASM `unreachable` while loading WillaGlobalPoland SOG; that pair is excluded, with the failure preserved. No SOG input is converted back to PLY for rendering. Raw runs record `format`, `input` hashes and `initial.state.shStorage`. Memory remains the full measured CPU accounting sum and explicit GPU allocation, including renderer work buffers.
 
-PLY v5 runs without a `format` field are validated against `baseline-ply-v5.json`; their bytes, timestamps, versions and metrics are retained. New runs are validated against current `config.json`. The report separates format cohorts, including their versions, browsers and dates. Cross-format differences also include quantization and version changes.
+Every run is validated against the current `config.json`. The report shows versions, browsers and dates per format; cross-format differences also include quantization.
 
 WebGL texture accounting v2 handles both explicit dimensions and ImageBitmap uploads used by SOG. A targeted repair can retain the original schedule and archive the previous raw run: `ROUNDS=1 node harness/run.mjs elevator pc-gl --format=sog --retry=texture-accounting`. This is separate from a fresh full matrix. `--retry-outliers` explicitly checks existing selected results for the usual one-time 3% retry; normal resume only checks newly measured runs.
 

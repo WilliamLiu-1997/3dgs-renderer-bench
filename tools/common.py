@@ -80,9 +80,7 @@ def run_name(model, mode, round, format):
 
 
 def check_config(run, config):
-    # The original PLY cohort predates format selection and retains its tested versions.
-    expected = config if 'format' in run else json.loads((HARNESS / 'baseline-ply-v5.json').read_text())
-    if run['config'] != expected:
+    if run['config'] != config:
         raise ValueError('Stale configuration: ' + run['name'])
     if source_format(run) not in config['formats']:
         raise ValueError('Unknown input format: ' + run['name'])
@@ -130,7 +128,12 @@ def expected_parameters(mode):
     if mode.startswith('aholo'):
         return {
             'packType': 'Compressed',
-            'pack': {'highPrecisionEnabled': True, 'precalculateEnabled': True, 'cameraRelativeEnabled': False},
+            'pack': {
+                'highPrecisionEnabled': True,
+                'precalculateEnabled': True,
+                'cameraRelativeEnabled': False,
+                'repackEnabled': True,
+            },
             'raster': {
                 'preBlurAmount': 0.3,
                 'blurAmount': 0,
@@ -141,7 +144,7 @@ def expected_parameters(mode):
                 'detailCullingAlphaEnabled': False,
             },
             'sort': {
-                'highPrecisionEnabled': True,
+                'radial': True,
                 'minIntervalMs': 0,
                 'sortCameraDistance': 1e-4,
                 'sortCameraCoorient': 1 - 1e-6,

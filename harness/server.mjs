@@ -23,7 +23,13 @@ const mounts = [
   ['/', harness],
 ];
 
+// Instrumented copies built by build.mjs, served at the package's own Worker URL.
+const overrides = {
+  '/node_modules/@manycore/aholo-viewer/dist/splat-sort-worker.js': path.join(harness, 'dist/aholo-sort-worker.js'),
+};
+
 function resolveFile(pathname) {
+  if (overrides[pathname]) return overrides[pathname];
   const model = pathname.match(/^\/models\/([a-z0-9-]+)\.(ply|sog)$/);
   if (model)
     return (

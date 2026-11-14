@@ -25,7 +25,7 @@ IMAGE_PREFIX = '../harness/results/'
 PROTOCOL = (
     'Three fresh Chrome processes per backend and model; paired forward/reverse backend order with a rotating '
     'starting backend within each format. Full original PLY/SH3 inputs and matched SOG/SH3 conversions, matched cameras and resolution, rendering settings adjusted '
-    'as closely as possible, radial sorting in all depth-sorted groups except Aholo Viewer (view depth only) and native caching. Every backend measures '
+    'as closely as possible, radial sorting in all depth-sorted groups and native caching. Every backend measures '
     'static and moving (±45°, 8 s real-time orbit) main and second views (a closer side view; WillaGlobalPoland: its entrance side); PlayCanvas WebGPU and both Gaussian Splat Lite '
     'backends add raw stochastic rendering without spatial resolve or temporal accumulation. Frames are sampled '
     'with the lab sampler and one GPU frame in flight: each frame is submitted after the '
@@ -112,8 +112,19 @@ def main():
         raise SystemExit('Publish requires a complete validation of the current protocol')
     input_manifest = manifest(config, runs)
 
-    # Raw results: every run JSON, the retried originals and activity log, plus the round-one captures.
+    # Raw results: every run JSON, the retried originals and activity log, plus the round-one captures. The published
+    # folder mirrors this run, so records of an earlier cohort do not linger.
     PUBLISHED_RESULTS.mkdir(exist_ok=True)
+    keep = {f.name for f in files} | {'activity.log', 'outliers'}
+    keep |= {c.name for c in source.glob('*-r1-*.png') if not c.name.endswith('-failure.png')}
+    keep_outliers = {f.name for f in run_files(source / 'outliers')} if (source / 'outliers').is_dir() else set()
+    # macOS AppleDouble files (._*) on external volumes disappear with their data file.
+    for f in list(PUBLISHED_RESULTS.iterdir()):
+        if not f.name.startswith('._') and f.name not in keep:
+            f.unlink(missing_ok=True)
+    for f in list((PUBLISHED_RESULTS / 'outliers').glob('*')) if (PUBLISHED_RESULTS / 'outliers').is_dir() else []:
+        if not f.name.startswith('._') and f.name not in keep_outliers:
+            f.unlink(missing_ok=True)
     for f in files:
         copy_result(f, PUBLISHED_RESULTS / f.name)
     if (source / 'outliers').is_dir():

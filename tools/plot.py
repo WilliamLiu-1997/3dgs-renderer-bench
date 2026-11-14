@@ -133,7 +133,7 @@ def main():
     renderer_groups = [
         (
             'ThreeJS:',
-            f'Gaussian Splat Lite {data["cohorts"]["ply"]["versions"]["gsl"]} (PLY) / {data["cohorts"]["sog"]["versions"]["gsl"]} (SOG) · Spark {versions["spark"]} · Radix {versions["radix"]}',
+            f'Gaussian Splat Lite {versions["gsl"]} · Spark {versions["spark"]} · Radix {versions["radix"]}',
         ),
         ('PlayCanvas:', f'PlayCanvas {versions["playcanvas"]} · SuperSplat Viewer {versions["viewer"]}'),
         ('Other:', f'Aholo Viewer {versions["aholo"]}'),
@@ -156,13 +156,20 @@ def main():
         fontsize=11,
         color=MUTED,
     )
+    names = {b['id']: b['short'].split(' / ')[0] for b in data['backends']}
+    unavailable = ['Radix (no SOG loader)'] + [
+        f'{data["models"][e["model"]]["name"]} / {names[e["mode"]]} (loading failed)'
+        for e in data['exclusions']
+        if e['format'] == 'sog'
+    ]
     notes = [
-        'PLY results preserved; SOG measured separately with the versions above. Cross-format changes do not isolate codebook performance.',
-        'SOG SH source: shared codebooks in GSL / PlayCanvas / Viewer; expanded per splat in Spark / Aholo. Radix and WillaGlobalPoland / Spark SOG are unavailable.',
+        'PLY and SOG measured in one cohort with the versions above. Cross-format changes do not isolate codebook performance.',
+        'SOG SH source: shared codebooks in GSL / PlayCanvas / Viewer; expanded per splat in Spark / Aholo. '
+        f'SOG unavailable: {", ".join(unavailable)}.',
         'Median of independent runs; whiskers show run min/max. One GPU frame in flight. Sorted and raw stochastic groups have separate winners.',
         'Aligned rendering presets; real-time orbit ±45° / 8 s. Raw stochastic: no spatial resolve or temporal accumulation.',
-        'Gaussian Splat Lite retains default 16-bit front-to-back stochastic sorting. PlayCanvas raw stochastic skips depth sorting. '
-        'Aholo Viewer sorts by view depth; the others by camera distance.',
+        'All sorted groups sort by camera distance. Gaussian Splat Lite retains default 16-bit front-to-back stochastic sorting; '
+        'PlayCanvas raw stochastic skips depth sorting.',
     ]
     for i, note in enumerate(notes):
         fig.text(0.045, (0.029 - 0.006 * i), note, fontsize=10, color=MUTED)

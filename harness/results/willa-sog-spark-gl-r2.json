@@ -14,7 +14,7 @@
     "spark-gl"
   ],
   "config": {
-    "protocol": "nine-backends-four-views-one-frame-in-flight-v5",
+    "protocol": "nine-backends-four-views-one-frame-in-flight-v6",
     "logicalWidth": 1512,
     "logicalHeight": 982,
     "dpr": 2,
@@ -111,17 +111,14 @@
       }
     },
     "versions": {
-      "gsl": "1.7.0",
+      "gsl": "1.8.1",
       "spark": "2.4.0",
       "radix": "0.0.1",
-      "viewer": "1.42.0",
+      "viewer": "1.43.2",
       "three": "0.187.0",
-      "playcanvas": "2.24.0-beta.30",
+      "playcanvas": "2.24.1",
       "threeRadix": "0.186.1",
-      "aholo": "1.12.0"
-    },
-    "commits": {
-      "playcanvas": "876ba2e7dffc246b1008695f23f60ac1a9b96109"
+      "aholo": "1.14.0"
     },
     "formats": {
       "ply": {
@@ -154,16 +151,16 @@
     "model": "willa",
     "sourceSha256": "aa10ab5142d8455a5f864256be9e5385d1306524ffd7dee1752a31fedef5e140",
     "file": "WillaGlobalPoland.sog",
-    "sha256": "bbf308c949f78cfb641c9059615246da3bece5d550ad2f6b29c9d6f53ebd48b7",
-    "bytes": 171830520,
+    "sha256": "79c00002e82dd01920d92e3f2f6f175f88db4efeb964aedefd554b20c5d5a697",
+    "bytes": 171669913,
     "splats": 14469103,
     "version": 2,
     "shBands": 3,
     "codebookEntries": 65536,
-    "generator": "splat-transform v3.6.4",
+    "generator": "splat-transform v3.11.2",
     "shIterations": 10,
     "gpu": 0,
-    "conversionSeconds": 217.419
+    "conversionSeconds": 263.2497217500004
   },
   "cases": [],
   "sort": [],

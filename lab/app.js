@@ -1,5 +1,6 @@
 import {
   BACKENDS,
+  CONVERTER,
   FRAME_COLUMNS,
   PACKAGES,
   PRESETS,
@@ -95,9 +96,6 @@ function getConfig() {
         versionCatalog[k]?.find(entry => entry.version === v) ?? {
           version: v,
           source: 'manual / bundled',
-          ...(v === PACKAGES[k].version && PACKAGES[k].commit
-            ? { commit: PACKAGES[k].commit, url: `https://github.com/${repos[k]}/commit/${PACKAGES[k].commit}` }
-            : {}),
         },
       ]),
     ),
@@ -349,7 +347,7 @@ async function selectFile(input) {
       const result = await convert(file);
       state.file = new File([result.bytes], 'scene.ply', { type: 'application/octet-stream' });
       state.source.conversion = {
-        library: '@playcanvas/splat-transform@3.6.4',
+        library: `${converter.name}@${converter.version}`,
         ms: result.ms,
         outputBytes: state.file.size,
         count: result.count,
@@ -471,13 +469,6 @@ async function refreshVersions() {
           version: pkg.version,
           source: 'bundled',
           url: `https://github.com/${repos[key]}/releases`,
-        });
-      if (pkg.commit)
-        entries.set(pkg.version, {
-          version: pkg.version,
-          source: 'bundled commit',
-          commit: pkg.commit,
-          url: `https://github.com/${repos[key]}/commit/${pkg.commit}`,
         });
       versionCatalog[key] = [...entries.values()].sort(
         (a, b) => Date.parse(npm.time[b.version]) - Date.parse(npm.time[a.version]),

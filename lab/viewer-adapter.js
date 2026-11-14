@@ -83,7 +83,7 @@ export async function createViewerAdapter(lib, pc, canvas, commonCamera, url, fi
       version: loaded.version,
       moduleURL: loaded.moduleURL,
       engineVersion: pc.version,
-      engineCommit: pc.revision,
+      engineRevision: pc.revision,
       backend: 'WebGPU',
       shStorage: {
         kind: asset.resource.gsplatData.sh_centroids ? 'shared-codebook' : 'per-splat',

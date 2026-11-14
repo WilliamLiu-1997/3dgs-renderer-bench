@@ -22,13 +22,13 @@
   },
   "dependencies": {
     "@manycore/aholo-viewer": "1.14.0",
-    "@playcanvas/splat-transform": "3.6.4",
-    "@playcanvas/supersplat-viewer": "1.42.0",
+    "@playcanvas/splat-transform": "3.11.2",
+    "@playcanvas/supersplat-viewer": "1.43.2",
     "@sparkjsdev/radix": "file:vendor/sparkjsdev-radix-0.0.1.tgz",
     "@sparkjsdev/spark": "2.4.0",
-    "gaussian-splat-lite": "1.7.0",
+    "gaussian-splat-lite": "1.8.1",
     "jspdf": "4.2.1",
-    "playcanvas": "file:vendor/playcanvas-2.24.0-beta.30.tgz",
+    "playcanvas": "2.24.1",
     "three": "0.187.0",
     "three-radix": "npm:three@0.186.1"
   },
