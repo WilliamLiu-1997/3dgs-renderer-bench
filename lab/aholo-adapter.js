@@ -47,35 +47,20 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
   const { SplatLoader, SplatUtils } = lib;
   const sog = /\.sog$/i.test(filename);
   const start = performance.now();
-  // A Worker streams the file in chunks, so it needs an absolute URL. Compressed is the highest-precision
-  // pack the renderer accepts.
   const data = await SplatLoader.parseSplatData(
     sog ? SplatLoader.SplatFileType.SOG : SplatLoader.SplatFileType.PLY,
-    new URL(url, location.href).href,
+    url,
     SplatLoader.SplatPackType.Compressed,
-    { maxShDegree: 3, retainData: false },
+    { maxShDegree: 3, stream: false },
   );
-  const min = [Infinity, Infinity, Infinity],
-    max = [-Infinity, -Infinity, -Infinity];
-  // Compressed's first sampler stores xyz in the first three of four 32-bit words per splat.
-  // Scan chunks before upload releases them, excluding texture padding after the last splat.
-  const expandBounds = (source, offset = 0) => {
-    const centers = new Float32Array(source.buffer, source.byteOffset, source.byteLength / 4);
-    const count = Math.min(centers.length / 4, data.counts - offset / 16);
-    for (let i = 0; i < count; i++)
-      for (let k = 0; k < 3; k++) {
-        min[k] = Math.min(min[k], centers[i * 4 + k]);
-        max[k] = Math.max(max[k], centers[i * 4 + k]);
-      }
-  };
-  if (data.stream) {
-    const readChunks = data.readChunks.bind(data);
-    data.readChunks = (consume, release) =>
-      readChunks(async chunk => {
-        for (const { index, offset, source } of chunk.samplers) if (index === 0) expandBounds(source, offset);
-        await consume(chunk);
-      }, release);
-  } else expandBounds(data.serialize().samplers[0].source);
+  const box = new lib.Box3();
+  const position = new lib.Vector3();
+  for (let index = 0; index < data.counts; index++) {
+    data.getCenter(index, position);
+    box.expandByPoint(position);
+  }
+  const { center, radius } = box.getBoundingSphere(new lib.Sphere());
+  data.stream = {};
   const splat = await SplatUtils.createSplat(data, viewer._getEngine().renderer);
   splat.autoFreeResourceOnGpuPacked = true;
   viewer.getScene().add(splat);
@@ -104,9 +89,6 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
   } while (!sorted || !splat.isRenderingStability);
   const loadMs = performance.now() - start;
 
-  const center = min.map((v, k) => (v + max[k]) / 2);
-  const radius = Math.hypot(...max.map((v, k) => v - min[k])) / 2;
-
   return {
     canvas,
     gl,
@@ -116,7 +98,7 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
     loadMs,
     count: data.counts,
     sh: data.shDegree,
-    bounds: { center, radius },
+    bounds: { center: center.toArray(), radius },
     info: {
       version: loaded.version,
       moduleURL: loaded.moduleURL,
