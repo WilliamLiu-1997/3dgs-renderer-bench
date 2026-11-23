@@ -27,9 +27,6 @@ export const supportsFormat = (backend, format, version = PACKAGES[backend.lib].
   format !== 'sog' || backend.lib !== 'radix' || version !== '0.0.1';
 export const modelFormat = filename => filename.split('.').at(-1).toLowerCase();
 
-const isSafari =
-  /ip([ao]d|hone)/i.test(navigator.userAgent) || /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
 // GSL's baseline. Spark's radius limits use focal-scaled units; PlayCanvas's
 // minPixelSize uses the same projected units. Alpha matches PlayCanvas's WebGPU
 // visibility floor. Other culling details still differ.
@@ -82,7 +79,7 @@ export const PRESETS = {
       highPrecisionEnabled: true,
       precalculateEnabled: true,
       cameraRelativeEnabled: false,
-      repackEnabled: !isSafari,
+      repackEnabled: !/(ip([ao]d|hone)|Mac|android)/i.test(navigator.userAgent),
     },
     raster: {
       preBlurAmount: baseline.preBlurAmount,
