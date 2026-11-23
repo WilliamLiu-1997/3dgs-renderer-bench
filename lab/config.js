@@ -27,6 +27,9 @@ export const supportsFormat = (backend, format, version = PACKAGES[backend.lib].
   format !== 'sog' || backend.lib !== 'radix' || version !== '0.0.1';
 export const modelFormat = filename => filename.split('.').at(-1).toLowerCase();
 
+const isSafari =
+  /ip([ao]d|hone)/i.test(navigator.userAgent) || /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 // GSL's baseline. Spark's radius limits use focal-scaled units; PlayCanvas's
 // minPixelSize uses the same projected units. Alpha matches PlayCanvas's WebGPU
 // visibility floor. Other culling details still differ.
@@ -79,7 +82,7 @@ export const PRESETS = {
       highPrecisionEnabled: true,
       precalculateEnabled: true,
       cameraRelativeEnabled: false,
-      repackEnabled: true,
+      repackEnabled: !isSafari,
     },
     raster: {
       preBlurAmount: baseline.preBlurAmount,
@@ -113,7 +116,7 @@ export const FRAME_COLUMNS = [
 export const isBest = (value, values, higher = false) =>
   Number.isFinite(value) &&
   Number(value.toFixed(2)) ===
-    (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
+  (higher ? Math.max : Math.min)(...values.filter(Number.isFinite).map(v => Number(v.toFixed(2))));
 export const exactVersion = value => /^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/.test(value);
 export const median = values => percentile(values, 0.5);
 // Linear interpolation between closest ranks; matches numpy.percentile's default.
