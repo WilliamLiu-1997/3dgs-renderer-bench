@@ -47,9 +47,11 @@ export async function createAholo(lib, canvas, commonCamera, url, filename, size
   const { SplatLoader, SplatUtils } = lib;
   const sog = /\.sog$/i.test(filename);
   const start = performance.now();
+  // A Worker streams the file in chunks, so it needs an absolute URL. Compressed is the highest-precision
+  // pack the renderer accepts.
   const data = await SplatLoader.parseSplatData(
     sog ? SplatLoader.SplatFileType.SOG : SplatLoader.SplatFileType.PLY,
-    url,
+    new URL(url, location.href).href,
     SplatLoader.SplatPackType.Compressed,
     { maxShDegree: 3, stream: false },
   );
